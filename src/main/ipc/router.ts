@@ -3,8 +3,13 @@ import { IPC_CHANNELS } from '../../shared/ipc-channels';
 import type { IpcResponse, SystemStatus } from '../../shared/types';
 import { validateIpcPayload } from './validator';
 import type { DatabaseManager } from '../database/database-manager';
+import { HttpClientEngine } from '../network/http-client';
 
-export function registerIpcHandlers(dbManager: DatabaseManager, getMainWindow: () => BrowserWindow | null): void {
+export function registerIpcHandlers(
+  dbManager: DatabaseManager,
+  httpClient: HttpClientEngine,
+  getMainWindow: () => BrowserWindow | null
+): void {
   // Helper to wrap handlers in try/catch and payload validation
   function handle<TPayload, TResult>(
     channel: string,
@@ -119,6 +124,40 @@ export function registerIpcHandlers(dbManager: DatabaseManager, getMainWindow: (
 
   handle(IPC_CHANNELS.REQUEST_CREATE, (data: any) => {
     return dbManager.createRequest(data);
+  });
+
+  // HTTP Execution Engine
+  handle(IPC_CHANNELS.HTTP_EXECUTE, async (payload: any) => {
+    const response = await httpClient.execute(payload);
+    // Record in history if workspaceId is present
+    if (payload.workspaceId) {
+      try {
+        dbManager.addHistoryEntry({
+          workspaceId: payload.workspaceId,
+          method: payload.method,
+          url: payload.url,
+          statusCode: response.status,
+          timeMs: response.timeMs,
+          sizeBytes: response.sizeBytes
+        });
+      } catch (err) {
+        console.warn('Failed to record request history:', err);
+      }
+    }
+    return response;
+  });
+
+  handle(IPC_CHANNELS.HTTP_CANCEL, (requestId: string) => {
+    return httpClient.cancel(requestId);
+  });
+
+  // History
+  handle(IPC_CHANNELS.HISTORY_LIST, (workspaceId: string) => {
+    return dbManager.getHistory(workspaceId);
+  });
+
+  handle(IPC_CHANNELS.HISTORY_CLEAR, (workspaceId: string) => {
+    return dbManager.clearHistory(workspaceId);
   });
 
   // Window Controls

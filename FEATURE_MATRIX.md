@@ -12,11 +12,14 @@
 | **Persistence** | Collections Management | Implemented & Tested | Phase 1 | Saved in SQLite database |
 | **Persistence** | Environments Management | Implemented & Tested | Phase 1 | Saved in SQLite database |
 | **UI** | Custom Frameless TitleBar | Implemented & Tested | Phase 1 | Custom drag region & window buttons |
-| **UI** | Left Sidebar Navigation | Implemented & Tested | Phase 1 | Dense developer view |
+| **UI** | Left Sidebar Navigation | Implemented & Tested | Phase 1 | Dense developer view with history |
 | **UI** | Multi-Tab Manager | Implemented & Tested | Phase 1 | Request, overview, settings tabs |
 | **UI** | Theme Switcher (Dark/Light) | Implemented & Tested | Phase 1 | Persisted to SQLite settings table |
-| **HTTP Client**| Request Builder & Sender | Unimplemented | Phase 2 | Scheduled for Phase 2 |
-| **HTTP Client**| Response Body Inspector | Unimplemented | Phase 2 | Scheduled for Phase 2 |
+| **HTTP Client**| Request Builder & Sender | Implemented & Tested | Phase 2 | Real HTTP/HTTPS execution, Params, Headers, Body, Auth |
+| **HTTP Client**| Request Cancellation | Implemented & Tested | Phase 2 | Real-time cancellation via AbortController |
+| **HTTP Client**| Response Body Inspector | Implemented & Tested | Phase 2 | Pretty JSON, Raw, Search, Copy, Download |
+| **HTTP Client**| Response Headers & Cookies | Implemented & Tested | Phase 2 | Parsed Set-Cookie table & headers |
+| **HTTP Client**| Request History | Implemented & Tested | Phase 2 | Persisted in SQLite history table |
 | **Scripting**  | Sandboxed `pm.*` API | Unimplemented | Phase 4 | Scheduled for Phase 4 |
 | **Runner**     | Collection Test Runner | Unimplemented | Phase 5 | Scheduled for Phase 5 |
 | **Specs**      | OpenAPI 3.x Import | Unimplemented | Phase 6 | Scheduled for Phase 6 |

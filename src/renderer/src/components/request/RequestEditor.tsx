@@ -1,63 +1,273 @@
-import React from 'react';
-import { Send, Save, Globe } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, Save, Square } from 'lucide-react';
 import type { TabItem } from '../../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
+import type {
+  KeyValuePair,
+  RequestBodyConfig,
+  AuthConfig,
+  HttpRequestExecutionPayload
+} from '@shared/types';
+import { KeyValueTable } from './KeyValueTable';
+import { BodyEditor } from './BodyEditor';
+import { AuthEditor } from './AuthEditor';
+import { ResponseViewer } from '../response/ResponseViewer';
 
 interface RequestEditorProps {
   tab: TabItem;
 }
 
 export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
+  const {
+    executeRequest,
+    cancelRequest,
+    activeResponses,
+    executingRequests,
+    createRequest
+  } = useAppStore();
+
+  const [method, setMethod] = useState<string>(tab.method || 'GET');
+  const [url, setUrl] = useState<string>(tab.url || 'https://jsonplaceholder.typicode.com/todos/1');
+
+  // Request Config State
+  const [activeConfigTab, setActiveConfigTab] = useState<'params' | 'headers' | 'auth' | 'body'>('params');
+
+  const [params, setParams] = useState<KeyValuePair[]>([
+    { id: 'p1', key: '', value: '', enabled: true, description: '' }
+  ]);
+
+  const [headers, setHeaders] = useState<KeyValuePair[]>([
+    { id: 'h1', key: 'Accept', value: '*/*', enabled: true, description: 'Default accept all' }
+  ]);
+
+  const [body, setBody] = useState<RequestBodyConfig>({
+    type: 'none',
+    rawContent: '{\n  "title": "foo",\n  "body": "bar",\n  "userId": 1\n}'
+  });
+
+  const [auth, setAuth] = useState<AuthConfig>({
+    type: 'none'
+  });
+
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const requestId = tab.requestId || tab.id;
+  const isExecuting = Boolean(executingRequests[requestId]);
+  const response = activeResponses[requestId] || null;
+
+  // Sync query params when URL is edited or vice versa
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl);
+    try {
+      const parsed = new URL(newUrl);
+      const extractedParams: KeyValuePair[] = [];
+      parsed.searchParams.forEach((val, key) => {
+        extractedParams.push({
+          id: `p-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          key,
+          value: val,
+          enabled: true
+        });
+      });
+      if (extractedParams.length > 0) {
+        setParams(extractedParams);
+      }
+    } catch {
+      // User is still typing URL
+    }
+  };
+
+  const handleParamsChange = (newParams: KeyValuePair[]) => {
+    setParams(newParams);
+    try {
+      const parsed = new URL(url);
+      parsed.search = '';
+      for (const p of newParams) {
+        if (p.enabled && p.key.trim().length > 0) {
+          parsed.searchParams.append(p.key, p.value);
+        }
+      }
+      setUrl(parsed.toString());
+    } catch {
+      // Ignored if URL is incomplete
+    }
+  };
+
+  const handleSend = async () => {
+    if (isExecuting) return;
+
+    const payload: HttpRequestExecutionPayload = {
+      requestId,
+      method,
+      url,
+      params,
+      headers,
+      body,
+      auth
+    };
+
+    try {
+      await executeRequest(payload);
+    } catch (err) {
+      console.warn('Execution caught in component:', err);
+    }
+  };
+
+  const handleCancel = () => {
+    cancelRequest(requestId);
+  };
+
+  const handleSave = async () => {
+    try {
+      await createRequest({
+        name: tab.title || 'Saved Request',
+        method,
+        url
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to save request:', err);
+    }
+  };
+
+  // Keyboard shortcut: Ctrl/Cmd + Enter to send
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSend();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSend]);
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-900/60 overflow-hidden">
-      {/* URL & Method Bar */}
-      <div className="p-3 border-b border-slate-800 flex items-center gap-2">
+    <div className="flex-1 flex flex-col h-full bg-slate-900/60 overflow-hidden text-xs">
+      {/* 1. Request URL & Method Bar */}
+      <div className="p-2.5 border-b border-slate-800 bg-slate-900/90 flex items-center gap-2">
         <select
-          defaultValue={tab.method || 'GET'}
-          className="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs font-bold text-emerald-400 outline-none"
+          value={method}
+          onChange={(e) => setMethod(e.target.value)}
+          className={`px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs font-bold outline-none cursor-pointer ${
+            method === 'GET'
+              ? 'text-emerald-400'
+              : method === 'POST'
+              ? 'text-amber-400'
+              : method === 'PUT'
+              ? 'text-blue-400'
+              : method === 'PATCH'
+              ? 'text-purple-400'
+              : method === 'DELETE'
+              ? 'text-red-400'
+              : 'text-slate-200'
+          }`}
         >
           <option value="GET">GET</option>
           <option value="POST">POST</option>
           <option value="PUT">PUT</option>
           <option value="PATCH">PATCH</option>
           <option value="DELETE">DELETE</option>
+          <option value="HEAD">HEAD</option>
+          <option value="OPTIONS">OPTIONS</option>
         </select>
 
-        <div className="flex-1 flex items-center bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs font-mono text-slate-200">
+        <div className="flex-1 flex items-center bg-slate-950 border border-slate-700/80 rounded px-3 py-1.5 font-mono text-slate-200 focus-within:border-blue-500 transition-colors">
           <input
             type="text"
-            defaultValue="https://httpbin.org/get"
-            className="w-full bg-transparent outline-none"
-            placeholder="Enter request URL..."
+            value={url}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            className="w-full bg-transparent outline-none placeholder:text-slate-600"
+            placeholder="Enter request URL (e.g. https://httpbin.org/get)..."
           />
         </div>
 
-        <button
-          disabled
-          title="HTTP Execution Engine will be activated in Phase 2"
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-blue-600/40 text-blue-300/60 text-xs font-semibold cursor-not-allowed border border-blue-500/20"
-        >
-          <Send size={13} />
-          <span>Send (Phase 2)</span>
-        </button>
+        {isExecuting ? (
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-red-600/30 text-red-400 border border-red-500/40 hover:bg-red-600/40 font-semibold transition-colors"
+          >
+            <Square size={12} className="fill-red-400" />
+            <span>Cancel</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSend}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors shadow-lg shadow-blue-600/20 active:translate-y-0.5"
+          >
+            <Send size={13} />
+            <span>Send</span>
+          </button>
+        )}
 
         <button
-          disabled
-          className="p-1.5 rounded bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700/60"
+          type="button"
+          onClick={handleSave}
+          title="Save Request"
+          className="flex items-center gap-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-colors"
         >
-          <Save size={14} />
+          <Save size={13} />
+          <span>{saveSuccess ? 'Saved!' : 'Save'}</span>
         </button>
       </div>
 
-      {/* Notice Banner */}
-      <div className="p-8 text-center max-w-lg mx-auto my-auto space-y-3">
-        <div className="w-12 h-12 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
-          <Globe size={22} />
+      {/* 2. Middle Split: Request Configuration (Top) & Response Inspector (Bottom) */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top: Request Config Tabs */}
+        <div className="h-64 flex flex-col border-b border-slate-800 bg-slate-900/40">
+          <div className="flex items-center px-3 border-b border-slate-800 bg-slate-900/70 select-none">
+            {(['params', 'headers', 'auth', 'body'] as const).map((tabKey) => (
+              <button
+                key={tabKey}
+                onClick={() => setActiveConfigTab(tabKey)}
+                className={`py-2 px-3 font-medium capitalize border-b-2 transition-colors ${
+                  activeConfigTab === tabKey
+                    ? 'text-blue-400 border-blue-500 font-semibold'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {tabKey === 'params'
+                  ? `Params (${params.filter((p) => p.key).length})`
+                  : tabKey === 'headers'
+                  ? `Headers (${headers.filter((h) => h.key).length})`
+                  : tabKey}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {activeConfigTab === 'params' && (
+              <KeyValueTable
+                items={params}
+                onChange={handleParamsChange}
+                keyPlaceholder="Query Parameter"
+                valuePlaceholder="Value"
+              />
+            )}
+            {activeConfigTab === 'headers' && (
+              <KeyValueTable
+                items={headers}
+                onChange={setHeaders}
+                keyPlaceholder="Header Name"
+                valuePlaceholder="Header Value"
+              />
+            )}
+            {activeConfigTab === 'auth' && <AuthEditor auth={auth} onChange={setAuth} />}
+            {activeConfigTab === 'body' && <BodyEditor config={body} onChange={setBody} />}
+          </div>
         </div>
-        <h3 className="text-sm font-semibold text-slate-200">Request: {tab.title}</h3>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          The Phase 1 Electron foundation, SQLite database, and UI shell are running.
-          The complete HTTP Execution Engine, Monaco Body Editor, Headers/Params tables, and Response Inspector will be implemented and tested in <strong>Phase 2</strong>.
-        </p>
+
+        {/* Bottom: Response Inspector */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ResponseViewer
+            response={response}
+            loading={isExecuting}
+            onCancel={handleCancel}
+          />
+        </div>
       </div>
     </div>
   );

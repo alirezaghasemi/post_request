@@ -32,6 +32,14 @@ export const IPC_CHANNELS = {
   REQUEST_UPDATE: 'request:update',
   REQUEST_DELETE: 'request:delete',
 
+  // HTTP Network Execution
+  HTTP_EXECUTE: 'http:execute',
+  HTTP_CANCEL: 'http:cancel',
+
+  // History
+  HISTORY_LIST: 'history:list',
+  HISTORY_CLEAR: 'history:clear',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

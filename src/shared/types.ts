@@ -57,6 +57,81 @@ export interface RequestItem {
   updatedAt: string;
 }
 
+export interface KeyValuePair {
+  id: string;
+  key: string;
+  value: string;
+  enabled: boolean;
+  description?: string;
+}
+
+export type BodyType = 'none' | 'json' | 'text' | 'xml' | 'html' | 'urlencoded';
+
+export interface RequestBodyConfig {
+  type: BodyType;
+  rawContent?: string;
+  urlencodedData?: KeyValuePair[];
+}
+
+export type AuthType = 'none' | 'bearer' | 'basic' | 'apikey';
+
+export interface AuthConfig {
+  type: AuthType;
+  bearerToken?: string;
+  basicUsername?: string;
+  basicPassword?: string;
+  apiKeyName?: string;
+  apiKeyValue?: string;
+  apiKeyAddTo?: 'header' | 'query';
+}
+
+export interface HttpRequestExecutionPayload {
+  requestId: string;
+  method: string;
+  url: string;
+  params: KeyValuePair[];
+  headers: KeyValuePair[];
+  body: RequestBodyConfig;
+  auth: AuthConfig;
+  timeoutMs?: number;
+  followRedirects?: boolean;
+}
+
+export interface HttpResponseCookie {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  expires?: string;
+  httpOnly?: boolean;
+  secure?: boolean;
+}
+
+export interface HttpResponseData {
+  requestId: string;
+  status: number;
+  statusText: string;
+  timeMs: number;
+  sizeBytes: number;
+  headers: Record<string, string | string[]>;
+  cookies: HttpResponseCookie[];
+  body: string;
+  contentType: string;
+  isTruncated: boolean;
+  error?: string;
+}
+
+export interface HistoryItem {
+  id: string;
+  workspaceId: string;
+  method: string;
+  url: string;
+  statusCode: number;
+  timeMs: number;
+  sizeBytes: number;
+  executedAt: string;
+}
+
 export interface Environment {
   id: string;
   workspaceId: string;

@@ -20,6 +20,8 @@ export const Sidebar: React.FC = () => {
     collections,
     createCollection,
     environments,
+    history,
+    clearHistory,
     openTab
   } = useAppStore();
 
@@ -187,8 +189,63 @@ export const Sidebar: React.FC = () => {
         )}
 
         {activeNav === 'history' && (
-          <div className="p-4 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded mt-2">
-            Local request history will record executed endpoints here.
+          <div className="space-y-1">
+            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span>Execution History ({history.length})</span>
+              {history.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => clearHistory()}
+                  className="text-[10px] text-red-400/80 hover:text-red-400 hover:underline"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
+            {history.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded mt-2">
+                No requests executed yet.
+              </div>
+            ) : (
+              history.map((item) => {
+                const is2xx = item.statusCode >= 200 && item.statusCode < 300;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      openTab({
+                        id: `hist-${item.id}`,
+                        type: 'request',
+                        title: item.url.replace(/^https?:\/\//, ''),
+                        method: item.method,
+                        url: item.url
+                      });
+                    }}
+                    className="group flex items-center justify-between px-2.5 py-1.5 rounded text-xs hover:bg-slate-800/70 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className={`text-[10px] font-bold ${
+                        item.method === 'GET' ? 'text-emerald-400' :
+                        item.method === 'POST' ? 'text-amber-400' :
+                        item.method === 'PUT' ? 'text-blue-400' : 'text-purple-400'
+                      }`}>
+                        {item.method}
+                      </span>
+                      <span className="truncate text-slate-300 font-mono text-[11px]">
+                        {item.url.replace(/^https?:\/\//, '')}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+                      <span className={is2xx ? 'text-emerald-400' : 'text-amber-400'}>
+                        {item.statusCode}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
       </div>

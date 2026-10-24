@@ -145,16 +145,23 @@ export const WelcomeView: React.FC = () => {
           <div className="space-y-2 text-xs">
             <div className="flex items-center gap-2 text-emerald-400">
               <CheckCircle2 size={14} />
-              <span className="text-slate-200 font-medium">Phase 1: Electron Foundation Active</span>
+              <span className="text-slate-200 font-medium">Phase 1: Electron Foundation</span>
               <span className="text-[11px] text-slate-400">
-                (Typed IPC, Secure Preload, SQLite Persistence, UI Shell, Dark Theme)
+                (Typed IPC, Preload, SQLite, Theme, UI Shell)
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-emerald-400">
+              <CheckCircle2 size={14} />
+              <span className="text-slate-200 font-medium">Phase 2: Core HTTP Client & Response Inspector Active</span>
+              <span className="text-[11px] text-slate-400">
+                (Real HTTP/HTTPS Execution, Params, Headers, Body, Auth, Response Inspector, History)
               </span>
             </div>
             <div className="flex items-center gap-2 text-slate-500">
               <div className="w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center text-[9px]">
-                2
+                3
               </div>
-              <span>Phase 2: Core HTTP Client & Response Inspector (Awaiting Approval)</span>
+              <span>Phase 3: Collections, Variables, Environments & Postman Import/Export</span>
             </div>
           </div>
         </div>

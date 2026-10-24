@@ -1,10 +1,12 @@
 import { app, BrowserWindow, shell, session } from 'electron';
 import path from 'node:path';
 import { DatabaseManager } from './database/database-manager';
+import { HttpClientEngine } from './network/http-client';
 import { registerIpcHandlers } from './ipc/router';
 
 let mainWindow: BrowserWindow | null = null;
 let dbManager: DatabaseManager | null = null;
+let httpClient: HttpClientEngine | null = null;
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -87,8 +89,10 @@ app.whenReady().then(() => {
   dbManager = new DatabaseManager(dbPath);
   dbManager.init();
 
+  httpClient = new HttpClientEngine();
+
   // Register all secure IPC channels
-  registerIpcHandlers(dbManager, () => mainWindow);
+  registerIpcHandlers(dbManager, httpClient, () => mainWindow);
 
   createWindow();
 

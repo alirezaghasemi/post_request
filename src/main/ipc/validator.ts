@@ -62,6 +62,36 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     return { valid: true };
   }
 
+  // HTTP Execution
+  if (channel === IPC_CHANNELS.HTTP_EXECUTE) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
+    const data = payload as { requestId?: unknown; method?: unknown; url?: unknown };
+    if (typeof data.requestId !== 'string' || data.requestId.trim().length === 0) {
+      return { valid: false, error: 'requestId is required' };
+    }
+    if (typeof data.method !== 'string' || data.method.trim().length === 0) {
+      return { valid: false, error: 'method is required' };
+    }
+    if (typeof data.url !== 'string' || data.url.trim().length === 0) {
+      return { valid: false, error: 'url is required' };
+    }
+    return { valid: true };
+  }
+
+  // String ID based actions (Cancel, History)
+  if (
+    channel === IPC_CHANNELS.HTTP_CANCEL ||
+    channel === IPC_CHANNELS.HISTORY_LIST ||
+    channel === IPC_CHANNELS.HISTORY_CLEAR
+  ) {
+    if (typeof payload !== 'string' || payload.trim().length === 0) {
+      return { valid: false, error: 'Payload must be a non-empty string' };
+    }
+    return { valid: true };
+  }
+
   // Generic object check for updates
   if (
     channel === IPC_CHANNELS.WORKSPACE_UPDATE ||

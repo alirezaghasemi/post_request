@@ -9,6 +9,8 @@ import type {
   RequestItem
 } from '../../shared/types';
 import { initialMigration } from './migrations/001-initial';
+import { historyMigration } from './migrations/002-history';
+import type { HistoryItem } from '../../shared/types';
 
 export class DatabaseManager {
   private db: Database.Database | null = null;
@@ -39,6 +41,7 @@ export class DatabaseManager {
   public init(): void {
     this.connect();
     this.runMigration(initialMigration);
+    this.runMigration(historyMigration);
   }
 
   public close(): void {
@@ -336,6 +339,56 @@ export class DatabaseManager {
       createdAt: now,
       updatedAt: now
     };
+  }
+
+  // --- History CRUD ---
+
+  public addHistoryEntry(data: {
+    workspaceId: string;
+    method: string;
+    url: string;
+    statusCode: number;
+    timeMs: number;
+    sizeBytes: number;
+  }): HistoryItem {
+    this.ensureConnected();
+    const id = randomUUID();
+    const now = new Date().toISOString();
+
+    this.db!.prepare(`
+      INSERT INTO history (id, workspace_id, method, url, status_code, time_ms, size_bytes, executed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.workspaceId, data.method, data.url, data.statusCode, data.timeMs, data.sizeBytes, now);
+
+    return {
+      id,
+      workspaceId: data.workspaceId,
+      method: data.method,
+      url: data.url,
+      statusCode: data.statusCode,
+      timeMs: data.timeMs,
+      sizeBytes: data.sizeBytes,
+      executedAt: now
+    };
+  }
+
+  public getHistory(workspaceId: string, limit: number = 50): HistoryItem[] {
+    this.ensureConnected();
+    const rows = this.db!.prepare(`
+      SELECT id, workspace_id as workspaceId, method, url, status_code as statusCode,
+             time_ms as timeMs, size_bytes as sizeBytes, executed_at as executedAt
+      FROM history
+      WHERE workspace_id = ?
+      ORDER BY executed_at DESC
+      LIMIT ?
+    `).all(workspaceId, limit) as HistoryItem[];
+    return rows;
+  }
+
+  public clearHistory(workspaceId: string): boolean {
+    this.ensureConnected();
+    const result = this.db!.prepare('DELETE FROM history WHERE workspace_id = ?').run(workspaceId);
+    return result.changes > 0;
   }
 
   // --- Settings ---

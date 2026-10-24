@@ -64,6 +64,18 @@ export const electronAPI = {
       invoke(IPC_CHANNELS.REQUEST_CREATE, data)
   },
 
+  // HTTP Network Execution
+  http: {
+    execute: (payload: any): Promise<any> => invoke(IPC_CHANNELS.HTTP_EXECUTE, payload),
+    cancel: (requestId: string): Promise<boolean> => invoke(IPC_CHANNELS.HTTP_CANCEL, requestId)
+  },
+
+  // History
+  history: {
+    list: (workspaceId: string): Promise<any[]> => invoke(IPC_CHANNELS.HISTORY_LIST, workspaceId),
+    clear: (workspaceId: string): Promise<boolean> => invoke(IPC_CHANNELS.HISTORY_CLEAR, workspaceId)
+  },
+
   // Window Controls
   window: {
     minimize: (): void => ipcRenderer.send(IPC_CHANNELS.WINDOW_MINIMIZE),

@@ -5,7 +5,10 @@ import type {
   Environment,
   RequestItem,
   SystemStatus,
-  AppSettings
+  AppSettings,
+  HistoryItem,
+  HttpRequestExecutionPayload,
+  HttpResponseData
 } from '@shared/types';
 
 export interface TabItem {
@@ -13,6 +16,7 @@ export interface TabItem {
   type: 'request' | 'overview' | 'settings';
   title: string;
   method?: string;
+  url?: string;
   isDirty?: boolean;
   requestId?: string;
 }
@@ -33,6 +37,13 @@ interface AppState {
   collections: Collection[];
   requestsByCollection: Record<string, RequestItem[]>;
 
+  // History
+  history: HistoryItem[];
+
+  // HTTP Execution State (per request tab)
+  activeResponses: Record<string, HttpResponseData | null>;
+  executingRequests: Record<string, boolean>;
+
   // Environments
   environments: Environment[];
   activeEnvironmentId: string | null;
@@ -48,6 +59,10 @@ interface AppState {
   createWorkspace: (name: string, description?: string) => Promise<void>;
   createCollection: (name: string, description?: string) => Promise<void>;
   createRequest: (data: { name: string; method: string; url: string; collectionId?: string }) => Promise<void>;
+  loadHistory: () => Promise<void>;
+  clearHistory: () => Promise<void>;
+  executeRequest: (payload: HttpRequestExecutionPayload) => Promise<HttpResponseData>;
+  cancelRequest: (requestId: string) => Promise<boolean>;
   openTab: (tab: TabItem) => void;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
@@ -65,6 +80,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   collections: [],
   requestsByCollection: {},
+
+  history: [],
+  activeResponses: {},
+  executingRequests: {},
 
   environments: [],
   activeEnvironmentId: null,
@@ -108,6 +127,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       document.documentElement.classList.toggle('dark', currentTheme === 'dark');
       document.documentElement.classList.toggle('light', currentTheme === 'light');
 
+      let history: HistoryItem[] = [];
+      if (initialWorkspaceId) {
+        history = await window.electronAPI.history.list(initialWorkspaceId);
+      }
+
       set({
         systemStatus: status,
         settings,
@@ -116,6 +140,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         activeWorkspaceId: initialWorkspaceId,
         collections,
         environments,
+        history,
         loading: false
       });
     } catch (err) {
@@ -138,11 +163,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ activeWorkspaceId: id, loading: true });
     try {
       if (window.electronAPI) {
-        const [collections, environments] = await Promise.all([
+        const [collections, environments, history] = await Promise.all([
           window.electronAPI.collections.list(id),
-          window.electronAPI.environments.list(id)
+          window.electronAPI.environments.list(id),
+          window.electronAPI.history.list(id)
         ]);
-        set({ collections, environments, loading: false });
+        set({ collections, environments, history, loading: false });
       }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), loading: false });
@@ -191,8 +217,85 @@ export const useAppStore = create<AppState>((set, get) => ({
       type: 'request',
       title: req.name,
       method: req.method,
+      url: req.url,
       requestId: req.id
     });
+  },
+
+  loadHistory: async () => {
+    const { activeWorkspaceId } = get();
+    if (!window.electronAPI || !activeWorkspaceId) return;
+    try {
+      const history = await window.electronAPI.history.list(activeWorkspaceId);
+      set({ history });
+    } catch (err) {
+      console.warn('Failed to load history:', err);
+    }
+  },
+
+  clearHistory: async () => {
+    const { activeWorkspaceId } = get();
+    if (!window.electronAPI || !activeWorkspaceId) return;
+    await window.electronAPI.history.clear(activeWorkspaceId);
+    set({ history: [] });
+  },
+
+  executeRequest: async (payload) => {
+    const { activeWorkspaceId } = get();
+    const requestId = payload.requestId;
+
+    set((state) => ({
+      executingRequests: { ...state.executingRequests, [requestId]: true },
+      activeResponses: { ...state.activeResponses, [requestId]: null }
+    }));
+
+    try {
+      const response = await window.electronAPI.http.execute({
+        ...payload,
+        workspaceId: activeWorkspaceId
+      });
+
+      set((state) => ({
+        activeResponses: { ...state.activeResponses, [requestId]: response },
+        executingRequests: { ...state.executingRequests, [requestId]: false }
+      }));
+
+      // Refresh history
+      get().loadHistory();
+
+      return response;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      const errorResponse: HttpResponseData = {
+        requestId,
+        status: 0,
+        statusText: 'Error',
+        timeMs: 0,
+        sizeBytes: 0,
+        headers: {},
+        cookies: [],
+        body: '',
+        contentType: 'text/plain',
+        isTruncated: false,
+        error: errorMsg
+      };
+
+      set((state) => ({
+        activeResponses: { ...state.activeResponses, [requestId]: errorResponse },
+        executingRequests: { ...state.executingRequests, [requestId]: false }
+      }));
+
+      throw err;
+    }
+  },
+
+  cancelRequest: async (requestId) => {
+    if (!window.electronAPI) return false;
+    const cancelled = await window.electronAPI.http.cancel(requestId);
+    set((state) => ({
+      executingRequests: { ...state.executingRequests, [requestId]: false }
+    }));
+    return cancelled;
   },
 
   openTab: (tab) => {
