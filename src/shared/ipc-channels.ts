@@ -72,6 +72,20 @@ export const IPC_CHANNELS = {
   RUNNER_PARSE_DATA: 'runner:parse-data',
   RUNNER_EXPORT_REPORT: 'runner:export-report',
 
+  // OpenAPI Import
+  IMPORT_OPENAPI: 'import:openapi',
+
+  // Mock Server
+  MOCK_SERVER_START: 'mock:server:start',
+  MOCK_SERVER_STOP: 'mock:server:stop',
+  MOCK_SERVER_STATUS: 'mock:server:status',
+  MOCK_SERVER_SET_ROUTES: 'mock:server:set-routes',
+  MOCK_SERVER_GET_LOGS: 'mock:server:get-logs',
+
+  // Documentation & Code Snippets
+  DOCS_GENERATE_HTML: 'docs:generate-html',
+  CODE_GENERATE_SNIPPET: 'code:generate-snippet',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

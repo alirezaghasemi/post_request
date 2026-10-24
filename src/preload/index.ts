@@ -78,7 +78,9 @@ export const electronAPI = {
     importEnvironment: (json: any, workspaceId: string): Promise<any> =>
       invoke(IPC_CHANNELS.IMPORT_POSTMAN_ENVIRONMENT, { json, workspaceId }),
     exportEnvironment: (environmentId: string): Promise<any> =>
-      invoke(IPC_CHANNELS.EXPORT_POSTMAN_ENVIRONMENT, environmentId)
+      invoke(IPC_CHANNELS.EXPORT_POSTMAN_ENVIRONMENT, environmentId),
+    importOpenApi: (workspaceId: string, content: string): Promise<any> =>
+      invoke(IPC_CHANNELS.IMPORT_OPENAPI, { workspaceId, content })
   },
 
   // Requests
@@ -130,6 +132,33 @@ export const electronAPI = {
       invoke(IPC_CHANNELS.RUNNER_PARSE_DATA, { content, format }),
     exportReport: (report: any, format: 'json' | 'html'): Promise<string> =>
       invoke(IPC_CHANNELS.RUNNER_EXPORT_REPORT, { report, format })
+  },
+
+  // Mock Server
+  mockServer: {
+    start: (port?: number): Promise<{ isRunning: boolean; port: number }> =>
+      invoke(IPC_CHANNELS.MOCK_SERVER_START, { port }),
+    stop: (): Promise<{ isRunning: boolean }> => invoke(IPC_CHANNELS.MOCK_SERVER_STOP),
+    status: (): Promise<{ isRunning: boolean; port: number; routesCount: number }> =>
+      invoke(IPC_CHANNELS.MOCK_SERVER_STATUS),
+    setRoutes: (routes: any[]): Promise<boolean> =>
+      invoke(IPC_CHANNELS.MOCK_SERVER_SET_ROUTES, routes),
+    getLogs: (): Promise<any[]> => invoke(IPC_CHANNELS.MOCK_SERVER_GET_LOGS),
+    onRequest: (callback: (log: any) => void): (() => void) => {
+      const listener = (_event: any, log: any) => callback(log);
+      ipcRenderer.on('mock:server:request', listener);
+      return () => ipcRenderer.removeListener('mock:server:request', listener);
+    }
+  },
+
+  // Documentation & Code Snippets
+  docs: {
+    generateHtml: (collectionId: string): Promise<string> =>
+      invoke(IPC_CHANNELS.DOCS_GENERATE_HTML, { collectionId })
+  },
+  code: {
+    generateSnippet: (request: any, language: string): Promise<string> =>
+      invoke(IPC_CHANNELS.CODE_GENERATE_SNIPPET, { request, language })
   },
 
   // Window Controls

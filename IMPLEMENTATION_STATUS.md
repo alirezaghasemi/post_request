@@ -45,16 +45,21 @@ Last Updated: Phase 5 Completion
   - Real-time Progress Streaming: Event-driven step reporting streamed to the renderer via IPC (`runner:progress`).
   - Standalone HTML & JSON Report Exporters: Beautiful, responsive, standalone HTML test report with dark theme, summary cards, pass/fail percentage bar, and expandable request details, plus raw JSON export.
   - Full Runner UI: Modal interface (`CollectionRunnerModal.tsx`) with run configuration, iteration data preview, live progress logs, pass/fail badges, and report export buttons, directly launchable from collection items in the Sidebar.
+- **OpenAPI 3.x, Documentation Generator & Local Mock Server (Phase 6):**
+  - OpenAPI & Swagger Importer: In-depth parser (`openapi-importer.ts`) supporting OpenAPI 3.0, 3.1, and Swagger 2.0 specs in both YAML and JSON. Automatically generates collections, folders, query/header parameters, request bodies, auth configurations, and server baseUrl variables.
+  - Local Mock Server (`mock-server.ts`): Built-in, zero-dependency lightweight `node:http` mock server with configurable port (default 3001), parameterized dynamic path matching (`/users/:id`), custom status codes, headers, response delay (latency simulation), and standard CORS enablement.
+  - Interactive Mock Manager UI (`MockServerModal.tsx`): Route generation from existing collections, manual route authoring, server start/stop toggles, and live incoming HTTP traffic monitor.
+  - Code Snippet Generator (`code-generator.ts`): Real-time generation of executable client code in 5 languages/libraries (cURL, JavaScript Fetch, Python Requests, Go net/http, Rust reqwest) integrated into `RequestEditor.tsx` via `CodeSnippetModal.tsx`.
+  - Standalone HTML API Documentation Generator (`doc-generator.ts`): Standalone, dark-themed responsive HTML API documentation previewer and downloader (`DocsExportModal.tsx`) with search, endpoint cards, query parameters, header tables, and tabbed code snippets.
 
 ## 2. Unimplemented Features (By Phase Roadmap)
-- OpenAPI 3.x import, documentation generator & local mock server (Phase 6).
 - Additional protocols (GraphQL, WebSocket, Socket.IO, gRPC, MQTT) (Phase 7).
 - Headless CLI & CI/CD automation runner (Phase 8).
 - Advanced features (Traffic Proxy, Git Diff & Versioning, AI Assistant) (Phase 9).
 - Production packaging, installer builds & release verification (Phase 10).
 
 ## 3. Test Coverage Summary
-- Unit & Integration Tests: 51 / 51 Passing (100%)
+- Unit & Integration Tests: 56 / 56 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -66,4 +71,5 @@ Last Updated: Phase 5 Completion
   - `tests/script-sandbox.test.ts` (6 tests)
   - `tests/vault-encryption.test.ts` (3 tests)
   - `tests/collection-runner.test.ts` (6 tests)
+  - `tests/openapi-mock-docs.test.ts` (5 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)

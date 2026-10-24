@@ -193,5 +193,41 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     return { valid: true };
   }
 
+  // Phase 6: OpenAPI & Mock & Docs
+  if (channel === IPC_CHANNELS.IMPORT_OPENAPI) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object with workspaceId and content' };
+    }
+    const data = payload as { workspaceId?: unknown; content?: unknown };
+    if (typeof data.workspaceId !== 'string' || !data.workspaceId.trim()) {
+      return { valid: false, error: 'workspaceId is required' };
+    }
+    if (typeof data.content !== 'string' || !data.content.trim()) {
+      return { valid: false, error: 'content is required' };
+    }
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.DOCS_GENERATE_HTML) {
+    if (typeof payload !== 'string' && (!payload || typeof (payload as any).collectionId !== 'string')) {
+      return { valid: false, error: 'collectionId is required' };
+    }
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.CODE_GENERATE_SNIPPET) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
+    const data = payload as { request?: unknown; language?: unknown };
+    if (!data.request || typeof data.request !== 'object') {
+      return { valid: false, error: 'request is required' };
+    }
+    if (typeof data.language !== 'string') {
+      return { valid: false, error: 'language is required' };
+    }
+    return { valid: true };
+  }
+
   return { valid: true };
 }

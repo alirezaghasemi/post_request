@@ -13,6 +13,10 @@ import { VaultManager } from '../vault/vault-manager';
 import { CollectionRunner } from '../runner/collection-runner';
 import { parseDataFile } from '../runner/data-parser';
 import { exportReportToHtml, exportReportToJson } from '../runner/report-exporter';
+import { parseOpenApiSpec } from '../importers/openapi-importer';
+import { LocalMockServer } from '../mock/mock-server';
+import { generateCollectionHtmlDocs } from '../docs/doc-generator';
+import { generateCodeSnippet } from '../../shared/code-generator';
 import type { ScriptLog, ScriptTestResult } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -26,11 +30,19 @@ export function registerIpcHandlers(
   const scriptSandbox = new ScriptSandbox();
   const oauth2Engine = new OAuth2Engine();
   const vaultManager = new VaultManager({ storagePath: app.getPath('userData') });
+  const mockServer = new LocalMockServer();
   const collectionRunner = new CollectionRunner({
     dbManager,
     httpClient,
     scriptSandbox,
     variableResolver
+  });
+
+  mockServer.on('request', (log) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('mock:server:request', log);
+    }
   });
   // Helper to wrap handlers in try/catch and payload validation
   function handle<TPayload, TResult>(
@@ -381,6 +393,86 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.RUNNER_EXPORT_REPORT, ({ report, format }: { report: any; format: 'json' | 'html' }) => {
     return format === 'html' ? exportReportToHtml(report) : exportReportToJson(report);
+  });
+
+  // Phase 6: OpenAPI Importer
+  handle(IPC_CHANNELS.IMPORT_OPENAPI, async ({ workspaceId, content }: { workspaceId: string; content: string }) => {
+    const result = parseOpenApiSpec(content);
+    const collection = dbManager.createCollection({
+      workspaceId,
+      name: result.collection.name,
+      description: result.collection.description,
+      variables: JSON.stringify(result.variables)
+    });
+
+    const folderIdMap = new Map<string, string>();
+    for (const folder of result.folders) {
+      const createdFolder = dbManager.createFolder({
+        collectionId: collection.id,
+        name: folder.name
+      });
+      folderIdMap.set(folder.id, createdFolder.id);
+    }
+
+    for (const req of result.requests) {
+      dbManager.createRequest({
+        collectionId: collection.id,
+        folderId: req.folderId ? folderIdMap.get(req.folderId) : undefined,
+        name: req.name,
+        method: req.method,
+        url: req.url,
+        params: req.params,
+        headers: req.headers,
+        body: req.body
+      });
+    }
+
+    return {
+      collection,
+      foldersCount: result.folders.length,
+      requestsCount: result.requests.length
+    };
+  });
+
+  // Phase 6: Mock Server
+  handle(IPC_CHANNELS.MOCK_SERVER_START, async (payload?: { port?: number }) => {
+    const port = payload?.port || 3001;
+    await mockServer.start(port);
+    return { isRunning: true, port: mockServer.getPort() };
+  });
+
+  handle(IPC_CHANNELS.MOCK_SERVER_STOP, async () => {
+    await mockServer.stop();
+    return { isRunning: false };
+  });
+
+  handle(IPC_CHANNELS.MOCK_SERVER_STATUS, () => {
+    return {
+      isRunning: mockServer.isRunning(),
+      port: mockServer.getPort(),
+      routesCount: mockServer.getRoutes().length
+    };
+  });
+
+  handle(IPC_CHANNELS.MOCK_SERVER_SET_ROUTES, (routes: any[]) => {
+    mockServer.registerRoutes(routes);
+    return true;
+  });
+
+  handle(IPC_CHANNELS.MOCK_SERVER_GET_LOGS, () => {
+    return mockServer.getLogs();
+  });
+
+  // Phase 6: Documentation & Code Snippets
+  handle(IPC_CHANNELS.DOCS_GENERATE_HTML, ({ collectionId }: { collectionId: string }) => {
+    const collection = dbManager.getCollection(collectionId);
+    if (!collection) throw new Error(`Collection not found: ${collectionId}`);
+    const requests = dbManager.getRequestsByCollection(collectionId);
+    return generateCollectionHtmlDocs(collection, requests);
+  });
+
+  handle(IPC_CHANNELS.CODE_GENERATE_SNIPPET, ({ request, language }: { request: any; language: any }) => {
+    return generateCodeSnippet(request, language);
   });
 
   // Window Controls

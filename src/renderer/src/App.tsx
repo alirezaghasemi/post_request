@@ -9,10 +9,17 @@ import { RequestEditor } from './components/request/RequestEditor';
 import { SettingsView } from './components/settings/SettingsView';
 import { EnvironmentManager } from './components/environment/EnvironmentManager';
 import { CollectionRunnerModal } from './components/runner/CollectionRunnerModal';
+import { OpenApiImportModal } from './components/importer/OpenApiImportModal';
+import { MockServerModal } from './components/mock/MockServerModal';
+import { DocsExportModal } from './components/docs/DocsExportModal';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
   const [runnerCollectionId, setRunnerCollectionId] = useState<string | null>(null);
+  const [docsCollectionId, setDocsCollectionId] = useState<string | null>(null);
+  const [mockModalOpen, setMockModalOpen] = useState<boolean>(false);
+  const [mockCollectionId, setMockCollectionId] = useState<string | undefined>(undefined);
+  const [openApiModalOpen, setOpenApiModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     init();
@@ -28,7 +35,15 @@ export const App: React.FC = () => {
       {/* 2. Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <Sidebar onRunCollection={(id) => setRunnerCollectionId(id)} />
+        <Sidebar
+          onRunCollection={(id) => setRunnerCollectionId(id)}
+          onViewDocs={(id) => setDocsCollectionId(id)}
+          onOpenMock={(id) => {
+            setMockCollectionId(id);
+            setMockModalOpen(true);
+          }}
+          onOpenOpenApiImport={() => setOpenApiModalOpen(true)}
+        />
 
         {/* Center/Right Workspace Area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-900/30">
@@ -68,6 +83,28 @@ export const App: React.FC = () => {
           collectionId={runnerCollectionId}
           isOpen={Boolean(runnerCollectionId)}
           onClose={() => setRunnerCollectionId(null)}
+        />
+      )}
+
+      {/* 5. Phase 6: OpenAPI Importer Modal */}
+      <OpenApiImportModal
+        isOpen={openApiModalOpen}
+        onClose={() => setOpenApiModalOpen(false)}
+      />
+
+      {/* 6. Phase 6: Mock Server Modal */}
+      <MockServerModal
+        isOpen={mockModalOpen}
+        initialCollectionId={mockCollectionId}
+        onClose={() => setMockModalOpen(false)}
+      />
+
+      {/* 7. Phase 6: Interactive Docs Export Modal */}
+      {docsCollectionId && (
+        <DocsExportModal
+          collectionId={docsCollectionId}
+          isOpen={Boolean(docsCollectionId)}
+          onClose={() => setDocsCollectionId(null)}
         />
       )}
     </div>

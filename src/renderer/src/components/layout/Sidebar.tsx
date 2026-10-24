@@ -8,15 +8,26 @@ import {
   Settings,
   Database,
   PlusCircle,
-  Play
+  Play,
+  BookOpen,
+  Server,
+  FileCode
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 interface SidebarProps {
   onRunCollection?: (collectionId: string) => void;
+  onViewDocs?: (collectionId: string) => void;
+  onOpenMock?: (collectionId?: string) => void;
+  onOpenOpenApiImport?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onRunCollection }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  onRunCollection,
+  onViewDocs,
+  onOpenMock,
+  onOpenOpenApiImport
+}) => {
   const {
     workspaces,
     activeWorkspaceId,
@@ -126,13 +137,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ onRunCollection }) => {
           <div className="space-y-1">
             <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               <span>Saved Collections ({collections.length})</span>
-              <button
-                onClick={() => setShowNewCollectionModal(true)}
-                title="New Collection"
-                className="text-slate-400 hover:text-blue-400 flex items-center gap-0.5"
-              >
-                <Plus size={13} />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => onOpenOpenApiImport?.()}
+                  title="Import OpenAPI / Swagger"
+                  className="text-slate-400 hover:text-emerald-400"
+                >
+                  <FileCode size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenMock?.()}
+                  title="Mock Server"
+                  className="text-slate-400 hover:text-purple-400"
+                >
+                  <Server size={13} />
+                </button>
+                <button
+                  onClick={() => setShowNewCollectionModal(true)}
+                  title="New Collection"
+                  className="text-slate-400 hover:text-blue-400"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
             </div>
 
             {collections.length === 0 ? (
@@ -167,6 +194,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ onRunCollection }) => {
                         <span className="truncate font-medium">{col.name}</span>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewDocs?.(col.id);
+                          }}
+                          title="Generate API Documentation"
+                          className="p-0.5 hover:text-blue-400"
+                        >
+                          <BookOpen size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenMock?.(col.id);
+                          }}
+                          title="Mock Collection"
+                          className="p-0.5 hover:text-purple-400"
+                        >
+                          <Server size={12} />
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

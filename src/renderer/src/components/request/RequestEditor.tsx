@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Save, Square } from 'lucide-react';
+import { Send, Save, Square, Code } from 'lucide-react';
 import type { TabItem } from '../../store/useAppStore';
 import { useAppStore } from '../../store/useAppStore';
 import type {
@@ -13,6 +13,7 @@ import { BodyEditor } from './BodyEditor';
 import { AuthEditor } from './AuthEditor';
 import { ScriptEditor } from './ScriptEditor';
 import { ResponseViewer } from '../response/ResponseViewer';
+import { CodeSnippetModal } from './CodeSnippetModal';
 
 interface RequestEditorProps {
   tab: TabItem;
@@ -33,6 +34,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
   const [url, setUrl] = useState<string>(tab.url || 'https://jsonplaceholder.typicode.com/todos/1');
   const [preScript, setPreScript] = useState<string>(tab.preScript || '');
   const [testScript, setTestScript] = useState<string>(tab.testScript || '');
+  const [showCodeModal, setShowCodeModal] = useState<boolean>(false);
 
   // Compute live resolved URL for display
   const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
@@ -241,6 +243,16 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
           <Save size={13} />
           <span>{saveSuccess ? 'Saved!' : 'Save'}</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setShowCodeModal(true)}
+          title="Generate Code Snippet"
+          className="flex items-center gap-1 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 transition-colors"
+        >
+          <Code size={13} />
+          <span>Code</span>
+        </button>
       </div>
 
       {/* Live Variable Resolution Preview */}
@@ -316,6 +328,18 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
           />
         </div>
       </div>
+
+      <CodeSnippetModal
+        isOpen={showCodeModal}
+        onClose={() => setShowCodeModal(false)}
+        request={{
+          method,
+          url,
+          headers,
+          params,
+          body
+        }}
+      />
     </div>
   );
 };
