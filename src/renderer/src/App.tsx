@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from './store/useAppStore';
 import { TitleBar } from './components/layout/TitleBar';
 import { Sidebar } from './components/layout/Sidebar';
@@ -8,9 +8,11 @@ import { WelcomeView } from './components/dashboard/WelcomeView';
 import { RequestEditor } from './components/request/RequestEditor';
 import { SettingsView } from './components/settings/SettingsView';
 import { EnvironmentManager } from './components/environment/EnvironmentManager';
+import { CollectionRunnerModal } from './components/runner/CollectionRunnerModal';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
+  const [runnerCollectionId, setRunnerCollectionId] = useState<string | null>(null);
 
   useEffect(() => {
     init();
@@ -26,7 +28,7 @@ export const App: React.FC = () => {
       {/* 2. Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <Sidebar />
+        <Sidebar onRunCollection={(id) => setRunnerCollectionId(id)} />
 
         {/* Center/Right Workspace Area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-slate-900/30">
@@ -59,6 +61,15 @@ export const App: React.FC = () => {
 
       {/* 3. Bottom Status Bar */}
       <StatusBar />
+
+      {/* 4. Collection Runner Modal */}
+      {runnerCollectionId && (
+        <CollectionRunnerModal
+          collectionId={runnerCollectionId}
+          isOpen={Boolean(runnerCollectionId)}
+          onClose={() => setRunnerCollectionId(null)}
+        />
+      )}
     </div>
   );
 };

@@ -66,6 +66,12 @@ export const IPC_CHANNELS = {
   VAULT_DECRYPT: 'vault:decrypt',
   VAULT_MASK: 'vault:mask',
 
+  // Collection Runner
+  RUNNER_START: 'runner:start',
+  RUNNER_CANCEL: 'runner:cancel',
+  RUNNER_PARSE_DATA: 'runner:parse-data',
+  RUNNER_EXPORT_REPORT: 'runner:export-report',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

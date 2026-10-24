@@ -122,6 +122,16 @@ export const electronAPI = {
     mask: (secret: string): Promise<string> => invoke(IPC_CHANNELS.VAULT_MASK, secret)
   },
 
+  // Collection Runner
+  runner: {
+    start: (config: any): Promise<any> => invoke(IPC_CHANNELS.RUNNER_START, config),
+    cancel: (): Promise<boolean> => invoke(IPC_CHANNELS.RUNNER_CANCEL),
+    parseData: (content: string, format: 'json' | 'csv'): Promise<Record<string, any>[]> =>
+      invoke(IPC_CHANNELS.RUNNER_PARSE_DATA, { content, format }),
+    exportReport: (report: any, format: 'json' | 'html'): Promise<string> =>
+      invoke(IPC_CHANNELS.RUNNER_EXPORT_REPORT, { report, format })
+  },
+
   // Window Controls
   window: {
     minimize: (): void => ipcRenderer.send(IPC_CHANNELS.WINDOW_MINIMIZE),

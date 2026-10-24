@@ -214,3 +214,32 @@ export interface IpcResponse<T = unknown> {
     details?: unknown;
   };
 }
+
+export interface RunnerStepResult {
+  requestId: string;
+  requestName: string;
+  method: string;
+  url: string;
+  status: number;
+  timeMs: number;
+  sizeBytes: number;
+  iteration: number;
+  tests: Array<{ name: string; passed: boolean; error?: string }>;
+  logs: Array<{ level: string; message: string; timestamp: string }>;
+  error?: string;
+}
+
+export interface CollectionRunReport {
+  id: string;
+  collectionId: string;
+  collectionName: string;
+  totalRequests: number;
+  totalPassed: number;
+  totalFailed: number;
+  totalTimeMs: number;
+  status: 'completed' | 'cancelled' | 'failed';
+  iterations: number;
+  results: RunnerStepResult[];
+  startedAt: string;
+  completedAt: string;
+}

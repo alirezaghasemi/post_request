@@ -26,6 +26,7 @@ export interface ScriptExecutionContext {
   variables?: Record<string, string>;
   environment?: EnvironmentVariable[];
   collectionVariables?: EnvironmentVariable[];
+  iterationData?: Record<string, any>;
   response?: ScriptResponseData;
   timeoutMs?: number;
 }
@@ -36,6 +37,7 @@ export interface ScriptExecutionResult {
   tests: ScriptTestResult[];
   updatedEnvironment?: EnvironmentVariable[];
   updatedVariables?: Record<string, string>;
+  nextRequest?: string | null;
   error?: string;
 }
 
@@ -140,6 +142,12 @@ export class ScriptSandbox {
       return chain;
     };
 
+    // Next request chaining for collection runners
+    let nextRequestDirective: string | null | undefined = undefined;
+    const setNext = (nameOrId: string | null) => {
+      nextRequestDirective = nameOrId;
+    };
+
     // Build the Postman-compatible `pm.*` object
     const pm: any = {
       test(testName: string, testFn: () => void) {
@@ -189,6 +197,19 @@ export class ScriptSandbox {
         },
         has(key: string) {
           return varMap.has(key) || envMap.has(key);
+        }
+      },
+      iterationData: {
+        get(key: string) {
+          return context.iterationData ? context.iterationData[key] : undefined;
+        },
+        toObject() {
+          return context.iterationData || {};
+        }
+      },
+      execution: {
+        setNextRequest(nameOrId: string | null) {
+          setNext(nameOrId);
         }
       }
     };
@@ -267,7 +288,12 @@ export class ScriptSandbox {
       Object,
       String,
       Number,
-      Boolean
+      Boolean,
+      postman: {
+        setNextRequest(nameOrId: string | null) {
+          setNext(nameOrId);
+        }
+      }
     };
 
     // Explicitly neutralize privileged globals
@@ -301,7 +327,8 @@ export class ScriptSandbox {
         logs,
         tests,
         updatedEnvironment: Array.from(envMap.values()),
-        updatedVariables: Object.fromEntries(varMap.entries())
+        updatedVariables: Object.fromEntries(varMap.entries()),
+        nextRequest: nextRequestDirective
       };
     } catch (err: any) {
       const isTimeout = err.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' || /timed out|timeout/i.test(err.message);

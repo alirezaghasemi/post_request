@@ -19,8 +19,29 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     channel === IPC_CHANNELS.WINDOW_MINIMIZE ||
     channel === IPC_CHANNELS.WINDOW_MAXIMIZE ||
     channel === IPC_CHANNELS.WINDOW_CLOSE ||
-    channel === IPC_CHANNELS.AUTH_OAUTH2_GENERATE_PKCE
+    channel === IPC_CHANNELS.AUTH_OAUTH2_GENERATE_PKCE ||
+    channel === IPC_CHANNELS.RUNNER_CANCEL
   ) {
+    return { valid: true };
+  }
+
+  // Runner Start validation
+  if (channel === IPC_CHANNELS.RUNNER_START) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
+    const data = payload as { collectionId?: unknown };
+    if (typeof data.collectionId !== 'string' || data.collectionId.trim().length === 0) {
+      return { valid: false, error: 'collectionId is required' };
+    }
+    return { valid: true };
+  }
+
+  // Runner Data Parse & Export
+  if (channel === IPC_CHANNELS.RUNNER_PARSE_DATA || channel === IPC_CHANNELS.RUNNER_EXPORT_REPORT) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
     return { valid: true };
   }
 

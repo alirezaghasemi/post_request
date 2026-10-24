@@ -10,6 +10,9 @@ import { PostmanExporter } from '../exporters/postman-exporter';
 import { ScriptSandbox } from '../scripting/sandbox';
 import { OAuth2Engine } from '../auth/oauth2';
 import { VaultManager } from '../vault/vault-manager';
+import { CollectionRunner } from '../runner/collection-runner';
+import { parseDataFile } from '../runner/data-parser';
+import { exportReportToHtml, exportReportToJson } from '../runner/report-exporter';
 import type { ScriptLog, ScriptTestResult } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -23,6 +26,12 @@ export function registerIpcHandlers(
   const scriptSandbox = new ScriptSandbox();
   const oauth2Engine = new OAuth2Engine();
   const vaultManager = new VaultManager({ storagePath: app.getPath('userData') });
+  const collectionRunner = new CollectionRunner({
+    dbManager,
+    httpClient,
+    scriptSandbox,
+    variableResolver
+  });
   // Helper to wrap handlers in try/catch and payload validation
   function handle<TPayload, TResult>(
     channel: string,
@@ -354,6 +363,24 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.HISTORY_CLEAR, (workspaceId: string) => {
     return dbManager.clearHistory(workspaceId);
+  });
+
+  // Collection Runner
+  handle(IPC_CHANNELS.RUNNER_START, async (config: any) => {
+    return collectionRunner.run(config);
+  });
+
+  handle(IPC_CHANNELS.RUNNER_CANCEL, () => {
+    collectionRunner.cancel();
+    return true;
+  });
+
+  handle(IPC_CHANNELS.RUNNER_PARSE_DATA, ({ content, format }: { content: string; format: 'json' | 'csv' }) => {
+    return parseDataFile(content, format);
+  });
+
+  handle(IPC_CHANNELS.RUNNER_EXPORT_REPORT, ({ report, format }: { report: any; format: 'json' | 'html' }) => {
+    return format === 'html' ? exportReportToHtml(report) : exportReportToJson(report);
   });
 
   // Window Controls

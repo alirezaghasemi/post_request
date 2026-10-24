@@ -7,11 +7,16 @@ import {
   Plus,
   Settings,
   Database,
-  PlusCircle
+  PlusCircle,
+  Play
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  onRunCollection?: (collectionId: string) => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ onRunCollection }) => {
   const {
     workspaces,
     activeWorkspaceId,
@@ -162,6 +167,16 @@ export const Sidebar: React.FC = () => {
                         <span className="truncate font-medium">{col.name}</span>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRunCollection?.(col.id);
+                          }}
+                          title="Run Collection"
+                          className="p-0.5 hover:text-emerald-400"
+                        >
+                          <Play size={12} />
+                        </button>
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();

@@ -7,8 +7,8 @@
 | **2** | Core HTTP Client, Request Builder, Real Network Execution, Response Viewer | **Completed** |
 | **3** | Collections, Folders, Environments, Variable Interpolation, Postman Import/Export | **Completed** |
 | **4** | Advanced Authentication (OAuth2, PKCE), Isolated Script Execution Engine | **Completed** |
-| **5** | Automated Tests & Collection Runner | Pending Approval |
-| **6** | OpenAPI 3.x Import, Documentation Generator, Local Mock Server | Scheduled |
+| **5** | Automated Tests & Collection Runner | **Completed** |
+| **6** | OpenAPI 3.x Import, Documentation Generator, Local Mock Server | Pending Approval |
 | **7** | Additional Protocols (GraphQL, WebSocket, Socket.IO, gRPC, MQTT) | Scheduled |
 | **8** | Headless CLI & CI/CD Automation | Scheduled |
 | **9** | Advanced Features (Traffic Proxy, Git Diff & Versioning, AI Assistant) | Scheduled |

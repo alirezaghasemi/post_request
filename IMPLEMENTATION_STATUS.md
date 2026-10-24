@@ -1,6 +1,6 @@
 # DevPilot API Studio — Implementation Status
 
-Last Updated: Phase 4 Completion
+Last Updated: Phase 5 Completion
 
 ## 1. Completed Features
 - **Electron Foundation (Phase 1):** Electron 33 configured with strict process separation, secure window creation, and frameless window controls.
@@ -37,17 +37,24 @@ Last Updated: Phase 4 Completion
   - Advanced Auth: RFC 7616 / RFC 2617 Digest Auth handler, OAuth 2.0 PKCE code verifier and challenge generator (S256), and Client Credentials grant token requester.
   - Local Secrets Vault: Authenticated AES-256-GCM encryption with local key protection (0600 mode) and sensitive value display masking.
   - Script & Test UI: Dedicated ScriptEditor with Postman snippet templates, Test Results visual inspector cards (Pass/Fail breakdown), and script execution Console log viewer.
+- **Automated Tests & Collection Runner (Phase 5):**
+  - Automated Sequential Collection Runner: Configurable iterations, inter-request delay (ms), selective request ordering, and "Stop on first error" option.
+  - Data-Driven Testing Engine: Fast CSV and JSON parser (`data-parser.ts`) supporting parameterized runs with Postman `pm.iterationData.get(key)` / `pm.iterationData.toObject()`.
+  - Dynamic Workflow & Flow Control: Fully supports dynamic execution branching and chaining via `postman.setNextRequest(nameOrId)` / `pm.execution.setNextRequest(nameOrId)` (supporting skip, loop, or terminate via `null`).
+  - In-flight Cancellation: Graceful cancellation of running loops via `AbortController` and `RUNNER_CANCEL` IPC signal.
+  - Real-time Progress Streaming: Event-driven step reporting streamed to the renderer via IPC (`runner:progress`).
+  - Standalone HTML & JSON Report Exporters: Beautiful, responsive, standalone HTML test report with dark theme, summary cards, pass/fail percentage bar, and expandable request details, plus raw JSON export.
+  - Full Runner UI: Modal interface (`CollectionRunnerModal.tsx`) with run configuration, iteration data preview, live progress logs, pass/fail badges, and report export buttons, directly launchable from collection items in the Sidebar.
 
-## 2. Partially Implemented Features
-- **Collection Automation:** Single-request tests and pre-scripts are functional; automated multi-request iteration runner is scheduled for Phase 5.
+## 2. Unimplemented Features (By Phase Roadmap)
+- OpenAPI 3.x import, documentation generator & local mock server (Phase 6).
+- Additional protocols (GraphQL, WebSocket, Socket.IO, gRPC, MQTT) (Phase 7).
+- Headless CLI & CI/CD automation runner (Phase 8).
+- Advanced features (Traffic Proxy, Git Diff & Versioning, AI Assistant) (Phase 9).
+- Production packaging, installer builds & release verification (Phase 10).
 
-## 3. Unimplemented Features (By Phase Roadmap)
-- Collection automated test runner & CSV/JSON iteration data (Phase 5).
-- OpenAPI 3.x import and local mock server (Phase 6).
-- Additional protocols (GraphQL, WebSocket, gRPC, MQTT) (Phase 7).
-
-## 4. Test Coverage Summary
-- Unit & Integration Tests: 45 / 45 Passing (100%)
+## 3. Test Coverage Summary
+- Unit & Integration Tests: 51 / 51 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -58,4 +65,5 @@ Last Updated: Phase 4 Completion
   - `tests/auth-advanced.test.ts` (4 tests)
   - `tests/script-sandbox.test.ts` (6 tests)
   - `tests/vault-encryption.test.ts` (3 tests)
+  - `tests/collection-runner.test.ts` (6 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)
