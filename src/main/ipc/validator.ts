@@ -229,5 +229,37 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     return { valid: true };
   }
 
+  // Phase 7: GraphQL, WebSocket, MQTT
+  if (channel === IPC_CHANNELS.GRAPHQL_EXECUTE) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { url?: unknown; query?: unknown };
+    if (typeof data.url !== 'string' || !data.url.trim()) return { valid: false, error: 'url is required' };
+    if (typeof data.query !== 'string' || !data.query.trim()) return { valid: false, error: 'query is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.GRAPHQL_INTROSPECT) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { url?: unknown };
+    if (typeof data.url !== 'string' || !data.url.trim()) return { valid: false, error: 'url is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.WEBSOCKET_CONNECT) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { connectionId?: unknown; url?: unknown };
+    if (typeof data.connectionId !== 'string' || !data.connectionId.trim()) return { valid: false, error: 'connectionId is required' };
+    if (typeof data.url !== 'string' || !data.url.trim()) return { valid: false, error: 'url is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.WEBSOCKET_SEND) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { connectionId?: unknown; data?: unknown };
+    if (typeof data.connectionId !== 'string') return { valid: false, error: 'connectionId is required' };
+    if (typeof data.data !== 'string') return { valid: false, error: 'data is required' };
+    return { valid: true };
+  }
+
   return { valid: true };
 }

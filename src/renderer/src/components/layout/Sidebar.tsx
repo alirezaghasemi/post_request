@@ -11,7 +11,10 @@ import {
   Play,
   BookOpen,
   Server,
-  FileCode
+  FileCode,
+  Code2,
+  Radio,
+  Wifi
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -20,13 +23,19 @@ interface SidebarProps {
   onViewDocs?: (collectionId: string) => void;
   onOpenMock?: (collectionId?: string) => void;
   onOpenOpenApiImport?: () => void;
+  onOpenGraphQL?: () => void;
+  onOpenWebSocket?: () => void;
+  onOpenMqtt?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   onRunCollection,
   onViewDocs,
   onOpenMock,
-  onOpenOpenApiImport
+  onOpenOpenApiImport,
+  onOpenGraphQL,
+  onOpenWebSocket,
+  onOpenMqtt
 }) => {
   const {
     workspaces,
@@ -151,6 +160,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="text-slate-400 hover:text-purple-400"
                 >
                   <Server size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenGraphQL?.()}
+                  title="GraphQL Studio"
+                  className="text-slate-400 hover:text-pink-400"
+                >
+                  <Code2 size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenWebSocket?.()}
+                  title="WebSocket Client"
+                  className="text-slate-400 hover:text-cyan-400"
+                >
+                  <Radio size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenMqtt?.()}
+                  title="MQTT Client"
+                  className="text-slate-400 hover:text-amber-400"
+                >
+                  <Wifi size={13} />
                 </button>
                 <button
                   onClick={() => setShowNewCollectionModal(true)}

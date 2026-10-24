@@ -52,14 +52,24 @@ Last Updated: Phase 5 Completion
   - Code Snippet Generator (`code-generator.ts`): Real-time generation of executable client code in 5 languages/libraries (cURL, JavaScript Fetch, Python Requests, Go net/http, Rust reqwest) integrated into `RequestEditor.tsx` via `CodeSnippetModal.tsx`.
   - Standalone HTML API Documentation Generator (`doc-generator.ts`): Standalone, dark-themed responsive HTML API documentation previewer and downloader (`DocsExportModal.tsx`) with search, endpoint cards, query parameters, header tables, and tabbed code snippets.
 
+- **Additional Protocols Support (Phase 7):**
+  - GraphQL Client: Formatted query and variables dispatching, response parsing, error formatting, and automated schema introspection query execution (`buildIntrospectionQuery`).
+  - WebSocket Workbench: Real persistent WebSocket connection client (`ws`), bi-directional frame sending and receiving, connection state management, event emitter hooks, and message history tracking.
+  - Socket.IO v4 Client: Socket.IO protocol handshake and packet framing (ping, pong, message, connect, disconnect) over real WebSocket connections.
+  - MQTT Client: Native MQTT client support connecting to TCP/TLS brokers, subscribing to topics with QoS (0, 1, 2), publishing payloads, and tracking received topic feeds.
+  - Dedicated Protocol Workbenches in UI:
+    - `GraphQLModal.tsx`: Visual query editor, variables editor, schema introspection explorer, and response viewer.
+    - `WebSocketModal.tsx`: Live connection toggle, message transmitter, ping runner, and message timeline feed with directional badges and byte counts.
+    - `MqttModal.tsx`: Broker connection settings, topic subscription manager with QoS tags, publisher panel, and real-time incoming message log.
+    - Protocol launchers accessible directly from the Collections header in `Sidebar.tsx`.
+
 ## 2. Unimplemented Features (By Phase Roadmap)
-- Additional protocols (GraphQL, WebSocket, Socket.IO, gRPC, MQTT) (Phase 7).
 - Headless CLI & CI/CD automation runner (Phase 8).
 - Advanced features (Traffic Proxy, Git Diff & Versioning, AI Assistant) (Phase 9).
 - Production packaging, installer builds & release verification (Phase 10).
 
 ## 3. Test Coverage Summary
-- Unit & Integration Tests: 56 / 56 Passing (100%)
+- Unit & Integration Tests: 61 / 61 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -72,4 +82,5 @@ Last Updated: Phase 5 Completion
   - `tests/vault-encryption.test.ts` (3 tests)
   - `tests/collection-runner.test.ts` (6 tests)
   - `tests/openapi-mock-docs.test.ts` (5 tests)
+  - `tests/protocols-advanced.test.ts` (5 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)

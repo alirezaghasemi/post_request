@@ -12,6 +12,9 @@ import { CollectionRunnerModal } from './components/runner/CollectionRunnerModal
 import { OpenApiImportModal } from './components/importer/OpenApiImportModal';
 import { MockServerModal } from './components/mock/MockServerModal';
 import { DocsExportModal } from './components/docs/DocsExportModal';
+import { GraphQLModal } from './components/protocols/GraphQLModal';
+import { WebSocketModal } from './components/protocols/WebSocketModal';
+import { MqttModal } from './components/protocols/MqttModal';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
@@ -20,6 +23,9 @@ export const App: React.FC = () => {
   const [mockModalOpen, setMockModalOpen] = useState<boolean>(false);
   const [mockCollectionId, setMockCollectionId] = useState<string | undefined>(undefined);
   const [openApiModalOpen, setOpenApiModalOpen] = useState<boolean>(false);
+  const [graphqlModalOpen, setGraphqlModalOpen] = useState<boolean>(false);
+  const [websocketModalOpen, setWebsocketModalOpen] = useState<boolean>(false);
+  const [mqttModalOpen, setMqttModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     init();
@@ -43,6 +49,9 @@ export const App: React.FC = () => {
             setMockModalOpen(true);
           }}
           onOpenOpenApiImport={() => setOpenApiModalOpen(true)}
+          onOpenGraphQL={() => setGraphqlModalOpen(true)}
+          onOpenWebSocket={() => setWebsocketModalOpen(true)}
+          onOpenMqtt={() => setMqttModalOpen(true)}
         />
 
         {/* Center/Right Workspace Area */}
@@ -107,6 +116,24 @@ export const App: React.FC = () => {
           onClose={() => setDocsCollectionId(null)}
         />
       )}
+
+      {/* 8. Phase 7: GraphQL Modal */}
+      <GraphQLModal
+        isOpen={graphqlModalOpen}
+        onClose={() => setGraphqlModalOpen(false)}
+      />
+
+      {/* 9. Phase 7: WebSocket Modal */}
+      <WebSocketModal
+        isOpen={websocketModalOpen}
+        onClose={() => setWebsocketModalOpen(false)}
+      />
+
+      {/* 10. Phase 7: MQTT Modal */}
+      <MqttModal
+        isOpen={mqttModalOpen}
+        onClose={() => setMqttModalOpen(false)}
+      />
     </div>
   );
 };

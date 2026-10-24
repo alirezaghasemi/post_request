@@ -17,6 +17,9 @@ import { parseOpenApiSpec } from '../importers/openapi-importer';
 import { LocalMockServer } from '../mock/mock-server';
 import { generateCollectionHtmlDocs } from '../docs/doc-generator';
 import { generateCodeSnippet } from '../../shared/code-generator';
+import { executeGraphQL, buildIntrospectionQuery } from '../protocols/graphql-client';
+import { WebSocketClientManager } from '../protocols/websocket-client';
+import { MqttClientManager } from '../protocols/mqtt-client';
 import type { ScriptLog, ScriptTestResult } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -31,6 +34,8 @@ export function registerIpcHandlers(
   const oauth2Engine = new OAuth2Engine();
   const vaultManager = new VaultManager({ storagePath: app.getPath('userData') });
   const mockServer = new LocalMockServer();
+  const wsManager = new WebSocketClientManager();
+  const mqttManager = new MqttClientManager();
   const collectionRunner = new CollectionRunner({
     dbManager,
     httpClient,
@@ -42,6 +47,27 @@ export function registerIpcHandlers(
     const win = getMainWindow();
     if (win && !win.isDestroyed()) {
       win.webContents.send('mock:server:request', log);
+    }
+  });
+
+  wsManager.on('message', (payload) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('websocket:message', payload);
+    }
+  });
+
+  wsManager.on('status', (payload) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('websocket:status', payload);
+    }
+  });
+
+  mqttManager.on('message', (payload) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('mqtt:message', payload);
     }
   });
   // Helper to wrap handlers in try/catch and payload validation
@@ -473,6 +499,75 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.CODE_GENERATE_SNIPPET, ({ request, language }: { request: any; language: any }) => {
     return generateCodeSnippet(request, language);
+  });
+
+  // Phase 7: GraphQL
+  handle(IPC_CHANNELS.GRAPHQL_EXECUTE, async (payload: any) => {
+    return executeGraphQL(payload);
+  });
+
+  handle(IPC_CHANNELS.GRAPHQL_INTROSPECT, async ({ url, headers }: { url: string; headers?: Record<string, string> }) => {
+    const query = buildIntrospectionQuery();
+    return executeGraphQL({ url, query, headers });
+  });
+
+  // Phase 7: WebSocket
+  handle(IPC_CHANNELS.WEBSOCKET_CONNECT, async ({ connectionId, url, headers }: { connectionId: string; url: string; headers?: Record<string, string> }) => {
+    await wsManager.connect(connectionId, url, headers);
+    return { status: 'connected' };
+  });
+
+  handle(IPC_CHANNELS.WEBSOCKET_SEND, ({ connectionId, data }: { connectionId: string; data: string }) => {
+    wsManager.send(connectionId, data);
+    return true;
+  });
+
+  handle(IPC_CHANNELS.WEBSOCKET_DISCONNECT, ({ connectionId }: { connectionId: string }) => {
+    wsManager.disconnect(connectionId);
+    return { status: 'disconnected' };
+  });
+
+  handle(IPC_CHANNELS.WEBSOCKET_GET_STATUS, ({ connectionId }: { connectionId: string }) => {
+    return wsManager.getStatus(connectionId);
+  });
+
+  handle(IPC_CHANNELS.WEBSOCKET_GET_HISTORY, ({ connectionId }: { connectionId: string }) => {
+    return wsManager.getHistory(connectionId);
+  });
+
+  handle(IPC_CHANNELS.WEBSOCKET_CLEAR_HISTORY, ({ connectionId }: { connectionId: string }) => {
+    wsManager.clearHistory(connectionId);
+    return true;
+  });
+
+  // Phase 7: MQTT
+  handle(IPC_CHANNELS.MQTT_CONNECT, async ({ clientId, brokerUrl, options }: { clientId: string; brokerUrl: string; options?: any }) => {
+    await mqttManager.connect(clientId, brokerUrl, options);
+    return { connected: true };
+  });
+
+  handle(IPC_CHANNELS.MQTT_SUBSCRIBE, async ({ clientId, topic, qos }: { clientId: string; topic: string; qos?: 0 | 1 | 2 }) => {
+    await mqttManager.subscribe(clientId, topic, qos);
+    return { subscribed: true, topic };
+  });
+
+  handle(IPC_CHANNELS.MQTT_UNSUBSCRIBE, async ({ clientId, topic }: { clientId: string; topic: string }) => {
+    await mqttManager.unsubscribe(clientId, topic);
+    return { unsubscribed: true, topic };
+  });
+
+  handle(IPC_CHANNELS.MQTT_PUBLISH, async ({ clientId, topic, message, qos }: { clientId: string; topic: string; message: string; qos?: 0 | 1 | 2 }) => {
+    await mqttManager.publish(clientId, topic, message, qos);
+    return { published: true };
+  });
+
+  handle(IPC_CHANNELS.MQTT_DISCONNECT, async ({ clientId }: { clientId: string }) => {
+    await mqttManager.disconnect(clientId);
+    return { connected: false };
+  });
+
+  handle(IPC_CHANNELS.MQTT_GET_HISTORY, ({ clientId }: { clientId: string }) => {
+    return mqttManager.getHistory(clientId);
   });
 
   // Window Controls

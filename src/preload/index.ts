@@ -161,6 +161,60 @@ export const electronAPI = {
       invoke(IPC_CHANNELS.CODE_GENERATE_SNIPPET, { request, language })
   },
 
+  // Phase 7: GraphQL
+  graphql: {
+    execute: (payload: any): Promise<any> => invoke(IPC_CHANNELS.GRAPHQL_EXECUTE, payload),
+    introspect: (url: string, headers?: Record<string, string>): Promise<any> =>
+      invoke(IPC_CHANNELS.GRAPHQL_INTROSPECT, { url, headers })
+  },
+
+  // Phase 7: WebSocket
+  websocket: {
+    connect: (connectionId: string, url: string, headers?: Record<string, string>): Promise<any> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_CONNECT, { connectionId, url, headers }),
+    send: (connectionId: string, data: string): Promise<boolean> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_SEND, { connectionId, data }),
+    disconnect: (connectionId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_DISCONNECT, { connectionId }),
+    getStatus: (connectionId: string): Promise<string> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_GET_STATUS, { connectionId }),
+    getHistory: (connectionId: string): Promise<any[]> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_GET_HISTORY, { connectionId }),
+    clearHistory: (connectionId: string): Promise<boolean> =>
+      invoke(IPC_CHANNELS.WEBSOCKET_CLEAR_HISTORY, { connectionId }),
+    onMessage: (callback: (payload: { connectionId: string; entry: any }) => void): (() => void) => {
+      const listener = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('websocket:message', listener);
+      return () => ipcRenderer.removeListener('websocket:message', listener);
+    },
+    onStatus: (callback: (payload: { connectionId: string; status: string }) => void): (() => void) => {
+      const listener = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('websocket:status', listener);
+      return () => ipcRenderer.removeListener('websocket:status', listener);
+    }
+  },
+
+  // Phase 7: MQTT
+  mqtt: {
+    connect: (clientId: string, brokerUrl: string, options?: any): Promise<any> =>
+      invoke(IPC_CHANNELS.MQTT_CONNECT, { clientId, brokerUrl, options }),
+    subscribe: (clientId: string, topic: string, qos?: 0 | 1 | 2): Promise<any> =>
+      invoke(IPC_CHANNELS.MQTT_SUBSCRIBE, { clientId, topic, qos }),
+    unsubscribe: (clientId: string, topic: string): Promise<any> =>
+      invoke(IPC_CHANNELS.MQTT_UNSUBSCRIBE, { clientId, topic }),
+    publish: (clientId: string, topic: string, message: string, qos?: 0 | 1 | 2): Promise<any> =>
+      invoke(IPC_CHANNELS.MQTT_PUBLISH, { clientId, topic, message, qos }),
+    disconnect: (clientId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.MQTT_DISCONNECT, { clientId }),
+    getHistory: (clientId: string): Promise<any[]> =>
+      invoke(IPC_CHANNELS.MQTT_GET_HISTORY, { clientId }),
+    onMessage: (callback: (payload: { clientId: string; entry: any }) => void): (() => void) => {
+      const listener = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('mqtt:message', listener);
+      return () => ipcRenderer.removeListener('mqtt:message', listener);
+    }
+  },
+
   // Window Controls
   window: {
     minimize: (): void => ipcRenderer.send(IPC_CHANNELS.WINDOW_MINIMIZE),

@@ -86,6 +86,26 @@ export const IPC_CHANNELS = {
   DOCS_GENERATE_HTML: 'docs:generate-html',
   CODE_GENERATE_SNIPPET: 'code:generate-snippet',
 
+  // Phase 7: GraphQL
+  GRAPHQL_EXECUTE: 'graphql:execute',
+  GRAPHQL_INTROSPECT: 'graphql:introspect',
+
+  // Phase 7: WebSocket
+  WEBSOCKET_CONNECT: 'websocket:connect',
+  WEBSOCKET_SEND: 'websocket:send',
+  WEBSOCKET_DISCONNECT: 'websocket:disconnect',
+  WEBSOCKET_GET_STATUS: 'websocket:get-status',
+  WEBSOCKET_GET_HISTORY: 'websocket:get-history',
+  WEBSOCKET_CLEAR_HISTORY: 'websocket:clear-history',
+
+  // Phase 7: MQTT
+  MQTT_CONNECT: 'mqtt:connect',
+  MQTT_SUBSCRIBE: 'mqtt:subscribe',
+  MQTT_UNSUBSCRIBE: 'mqtt:unsubscribe',
+  MQTT_PUBLISH: 'mqtt:publish',
+  MQTT_DISCONNECT: 'mqtt:disconnect',
+  MQTT_GET_HISTORY: 'mqtt:get-history',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
