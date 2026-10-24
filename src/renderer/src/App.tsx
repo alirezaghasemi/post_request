@@ -7,6 +7,7 @@ import { StatusBar } from './components/layout/StatusBar';
 import { WelcomeView } from './components/dashboard/WelcomeView';
 import { RequestEditor } from './components/request/RequestEditor';
 import { SettingsView } from './components/settings/SettingsView';
+import { EnvironmentManager } from './components/environment/EnvironmentManager';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
@@ -43,6 +44,8 @@ export const App: React.FC = () => {
               <div className="flex-1 flex items-center justify-center text-xs text-red-400 p-4">
                 <span>Initialization Error: {error}</span>
               </div>
+            ) : activeTab?.id === 'tab-environments' ? (
+              <EnvironmentManager />
             ) : activeTab?.type === 'settings' ? (
               <SettingsView />
             ) : activeTab?.type === 'request' ? (

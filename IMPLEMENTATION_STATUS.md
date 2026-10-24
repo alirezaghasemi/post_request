@@ -1,6 +1,6 @@
 # DevPilot API Studio — Implementation Status
 
-Last Updated: Phase 2 Completion
+Last Updated: Phase 3 Completion
 
 ## 1. Completed Features
 - **Electron Foundation (Phase 1):** Electron 33 configured with strict process separation, secure window creation, and frameless window controls.
@@ -22,20 +22,31 @@ Last Updated: Phase 2 Completion
   - Response copy-to-clipboard and save-to-file capabilities.
   - Large response memory protection: responses exceeding 10MB are handled safely without freezing the renderer.
   - Local SQLite execution history: automatically logs executed requests and status codes with quick reload in request tabs.
+- **Collections, Variables & Environments (Phase 3):**
+  - Deterministic Variable Resolution Engine: Request-Local > Environment > Collection > Global precedence.
+  - Scoped variable interpolation across URLs, Query Params, Headers, Body, and Auth.
+  - Live variable resolution preview and unresolved variable diagnostics.
+  - Environment Manager UI with key/value table, secret masking toggle, active environment switching, and export to Postman format.
+  - Active environment switcher directly integrated into the TitleBar header.
+  - Hierarchical Collections & Folders structure (nested folders, request assignment, foreign key cascade deletion).
+  - Postman Importer & Exporter: Postman Collection Schema v2.1.0/v2.0.0 and Postman Environment format support with Import Report.
 
 ## 2. Partially Implemented Features
-- **Request Collections Management:** Requests can be saved locally; deep tree hierarchies and drag-and-drop are part of Phase 3.
+- **Script Engine:** Variables are integrated with HTTP payloads; custom `pm.test` sandboxed scripting is scheduled for Phase 4.
 
 ## 3. Unimplemented Features (By Phase Roadmap)
-- Variable interpolation `{{variable}}` and environment resolution (Phase 3).
-- Postman Collection v2.1 & Environment import/export (Phase 3).
 - Isolated script execution engine for pre-request and tests (Phase 4).
+- Collection automated test runner (Phase 5).
+- OpenAPI 3.x import and local mock server (Phase 6).
 - Additional protocols (GraphQL, WebSocket, gRPC, MQTT) (Phase 7).
 
 ## 4. Test Coverage Summary
-- Unit & Integration Tests: 20 / 20 Passing (100%)
+- Unit & Integration Tests: 32 / 32 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
   - `tests/http-client.test.ts` (7 tests)
+  - `tests/variable-resolver.test.ts` (5 tests)
+  - `tests/postman-importer.test.ts` (3 tests)
+  - `tests/collections-tree.test.ts` (4 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)

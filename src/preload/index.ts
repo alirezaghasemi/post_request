@@ -6,6 +6,7 @@ import type {
   AppSettings,
   Workspace,
   Collection,
+  Folder,
   Environment,
   RequestItem
 } from '../shared/types';
@@ -48,12 +49,36 @@ export const electronAPI = {
     delete: (id: string): Promise<boolean> => invoke(IPC_CHANNELS.COLLECTION_DELETE, id)
   },
 
+  // Folders
+  folders: {
+    list: (collectionId: string): Promise<Folder[]> =>
+      invoke(IPC_CHANNELS.FOLDER_LIST, collectionId),
+    create: (data: { collectionId: string; parentFolderId?: string; name: string }): Promise<Folder> =>
+      invoke(IPC_CHANNELS.FOLDER_CREATE, data),
+    delete: (id: string): Promise<boolean> => invoke(IPC_CHANNELS.FOLDER_DELETE, id)
+  },
+
   // Environments
   environments: {
     list: (workspaceId: string): Promise<Environment[]> =>
       invoke(IPC_CHANNELS.ENVIRONMENT_LIST, workspaceId),
     create: (data: { workspaceId: string; name: string }): Promise<Environment> =>
-      invoke(IPC_CHANNELS.ENVIRONMENT_CREATE, data)
+      invoke(IPC_CHANNELS.ENVIRONMENT_CREATE, data),
+    update: (id: string, data: Partial<Pick<Environment, 'name' | 'variables' | 'isActive'>>): Promise<Environment> =>
+      invoke(IPC_CHANNELS.ENVIRONMENT_UPDATE, { id, ...data }),
+    delete: (id: string): Promise<boolean> => invoke(IPC_CHANNELS.ENVIRONMENT_DELETE, id)
+  },
+
+  // Import / Export
+  importExport: {
+    importCollection: (json: any, workspaceId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.IMPORT_POSTMAN_COLLECTION, { json, workspaceId }),
+    exportCollection: (collectionId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.EXPORT_POSTMAN_COLLECTION, collectionId),
+    importEnvironment: (json: any, workspaceId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.IMPORT_POSTMAN_ENVIRONMENT, { json, workspaceId }),
+    exportEnvironment: (environmentId: string): Promise<any> =>
+      invoke(IPC_CHANNELS.EXPORT_POSTMAN_ENVIRONMENT, environmentId)
   },
 
   // Requests

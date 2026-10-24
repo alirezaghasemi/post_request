@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   Workspace,
   Collection,
+  Folder,
   Environment,
   RequestItem,
   SystemStatus,
@@ -35,6 +36,7 @@ interface AppState {
 
   // Collections & Requests
   collections: Collection[];
+  foldersByCollection: Record<string, Folder[]>;
   requestsByCollection: Record<string, RequestItem[]>;
 
   // History
@@ -58,7 +60,13 @@ interface AppState {
   setActiveWorkspace: (id: string) => Promise<void>;
   createWorkspace: (name: string, description?: string) => Promise<void>;
   createCollection: (name: string, description?: string) => Promise<void>;
-  createRequest: (data: { name: string; method: string; url: string; collectionId?: string }) => Promise<void>;
+  createFolder: (collectionId: string, name: string, parentFolderId?: string) => Promise<void>;
+  createRequest: (data: { name: string; method: string; url: string; collectionId?: string; folderId?: string }) => Promise<void>;
+  setActiveEnvironment: (id: string | null) => Promise<void>;
+  createEnvironment: (name: string) => Promise<void>;
+  updateEnvironment: (id: string, data: Partial<Pick<Environment, 'name' | 'variables' | 'isActive'>>) => Promise<void>;
+  deleteEnvironment: (id: string) => Promise<void>;
+  importPostmanData: (json: any) => Promise<{ type: 'collection' | 'environment'; name: string }>;
   loadHistory: () => Promise<void>;
   clearHistory: () => Promise<void>;
   executeRequest: (payload: HttpRequestExecutionPayload) => Promise<HttpResponseData>;
@@ -79,6 +87,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeWorkspaceId: null,
 
   collections: [],
+  foldersByCollection: {},
   requestsByCollection: {},
 
   history: [],
@@ -198,6 +207,89 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       collections: [...state.collections, newCol]
     }));
+  },
+
+  createFolder: async (collectionId, name, parentFolderId) => {
+    if (!window.electronAPI) return;
+    const folder = await window.electronAPI.folders.create({
+      collectionId,
+      name,
+      parentFolderId
+    });
+    set((state) => ({
+      foldersByCollection: {
+        ...state.foldersByCollection,
+        [collectionId]: [...(state.foldersByCollection[collectionId] || []), folder]
+      }
+    }));
+  },
+
+  setActiveEnvironment: async (id) => {
+    set({ activeEnvironmentId: id });
+    if (!window.electronAPI) return;
+    const { environments } = get();
+    for (const env of environments) {
+      const isTarget = env.id === id;
+      if (env.isActive !== isTarget) {
+        await window.electronAPI.environments.update(env.id, { isActive: isTarget });
+      }
+    }
+    set((state) => ({
+      environments: state.environments.map((e) => ({
+        ...e,
+        isActive: e.id === id
+      }))
+    }));
+  },
+
+  createEnvironment: async (name) => {
+    const { activeWorkspaceId } = get();
+    if (!window.electronAPI || !activeWorkspaceId) return;
+    const newEnv = await window.electronAPI.environments.create({
+      workspaceId: activeWorkspaceId,
+      name
+    });
+    set((state) => ({
+      environments: [...state.environments, newEnv]
+    }));
+  },
+
+  updateEnvironment: async (id, data) => {
+    if (!window.electronAPI) return;
+    const updated = await window.electronAPI.environments.update(id, data);
+    set((state) => ({
+      environments: state.environments.map((e) => (e.id === id ? updated : e))
+    }));
+  },
+
+  deleteEnvironment: async (id) => {
+    if (!window.electronAPI) return;
+    await window.electronAPI.environments.delete(id);
+    set((state) => ({
+      environments: state.environments.filter((e) => e.id !== id),
+      activeEnvironmentId: state.activeEnvironmentId === id ? null : state.activeEnvironmentId
+    }));
+  },
+
+  importPostmanData: async (json) => {
+    const { activeWorkspaceId } = get();
+    if (!window.electronAPI || !activeWorkspaceId) {
+      throw new Error('No active workspace selected');
+    }
+
+    if (json.info && (json.info.schema || json.item)) {
+      // Collection import
+      const report = await window.electronAPI.importExport.importCollection(json, activeWorkspaceId);
+      await get().setActiveWorkspace(activeWorkspaceId);
+      return { type: 'collection', name: report.collection.name };
+    } else if (json.values || json._postman_variable_scope === 'environment') {
+      // Environment import
+      const env = await window.electronAPI.importExport.importEnvironment(json, activeWorkspaceId);
+      await get().setActiveWorkspace(activeWorkspaceId);
+      return { type: 'environment', name: env.name };
+    } else {
+      throw new Error('Unrecognized Postman data format (must be Collection v2.x or Environment)');
+    }
   },
 
   createRequest: async (data) => {

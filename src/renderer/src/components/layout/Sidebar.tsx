@@ -18,7 +18,9 @@ export const Sidebar: React.FC = () => {
     setActiveWorkspace,
     createWorkspace,
     collections,
+    requestsByCollection,
     createCollection,
+    createRequest,
     environments,
     history,
     clearHistory,
@@ -140,35 +142,98 @@ export const Sidebar: React.FC = () => {
                 </button>
               </div>
             ) : (
-              collections.map((col) => (
-                <div
-                  key={col.id}
-                  className="group flex items-center justify-between px-2.5 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800/70 hover:text-slate-100 cursor-pointer transition-colors"
-                  onClick={() => {
-                    openTab({
-                      id: `col-${col.id}`,
-                      type: 'overview',
-                      title: col.name
-                    });
-                  }}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    <Folder size={14} className="text-amber-400/80 shrink-0" />
-                    <span className="truncate">{col.name}</span>
+              collections.map((col) => {
+                const requests = requestsByCollection[col.id] || [];
+
+                return (
+                  <div key={col.id} className="space-y-0.5">
+                    <div
+                      className="group flex items-center justify-between px-2.5 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800/70 hover:text-slate-100 cursor-pointer transition-colors"
+                      onClick={() => {
+                        openTab({
+                          id: `col-${col.id}`,
+                          type: 'overview',
+                          title: col.name
+                        });
+                      }}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <Folder size={14} className="text-amber-400/80 shrink-0" />
+                        <span className="truncate font-medium">{col.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await createRequest({
+                              name: 'New Request',
+                              method: 'GET',
+                              url: 'https://httpbin.org/get',
+                              collectionId: col.id
+                            });
+                          }}
+                          title="Add Request"
+                          className="p-0.5 hover:text-blue-400"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Nested Requests */}
+                    {requests.length > 0 && (
+                      <div className="pl-5 space-y-0.5 border-l border-slate-800/80 ml-3">
+                        {requests.map((req) => (
+                          <div
+                            key={req.id}
+                            onClick={() => {
+                              openTab({
+                                id: `req-${req.id}`,
+                                type: 'request',
+                                title: req.name,
+                                method: req.method,
+                                url: req.url,
+                                requestId: req.id
+                              });
+                            }}
+                            className="flex items-center gap-2 px-2 py-1 rounded text-[11px] text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 cursor-pointer truncate"
+                          >
+                            <span className={`text-[9px] font-bold ${
+                              req.method === 'GET' ? 'text-emerald-400' :
+                              req.method === 'POST' ? 'text-amber-400' :
+                              req.method === 'PUT' ? 'text-blue-400' : 'text-purple-400'
+                            }`}>
+                              {req.method}
+                            </span>
+                            <span className="truncate">{req.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-400">
-                    {new Date(col.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
 
         {activeNav === 'environments' && (
           <div className="space-y-1">
-            <div className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="flex items-center justify-between px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               <span>Environments ({environments.length})</span>
+              <button
+                onClick={() =>
+                  openTab({
+                    id: 'tab-environments',
+                    type: 'overview',
+                    title: 'Environments'
+                  })
+                }
+                title="Manage Environments"
+                className="text-slate-400 hover:text-blue-400"
+              >
+                <Plus size={13} />
+              </button>
             </div>
             {environments.length === 0 ? (
               <div className="p-4 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded mt-2">
@@ -178,10 +243,24 @@ export const Sidebar: React.FC = () => {
               environments.map((env) => (
                 <div
                   key={env.id}
-                  className="flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800 cursor-pointer"
+                  onClick={() =>
+                    openTab({
+                      id: 'tab-environments',
+                      type: 'overview',
+                      title: 'Environments'
+                    })
+                  }
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded text-xs text-slate-300 hover:bg-slate-800 cursor-pointer"
                 >
-                  <Globe size={14} className="text-emerald-400 shrink-0" />
-                  <span className="truncate">{env.name}</span>
+                  <div className="flex items-center gap-2 truncate">
+                    <Globe size={14} className={env.isActive ? 'text-emerald-400' : 'text-slate-500'} />
+                    <span className="truncate">{env.name}</span>
+                  </div>
+                  {env.isActive && (
+                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1 py-0.2 rounded">
+                      Active
+                    </span>
+                  )}
                 </div>
               ))
             )}

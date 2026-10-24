@@ -152,16 +152,23 @@ export const WelcomeView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2 text-emerald-400">
               <CheckCircle2 size={14} />
-              <span className="text-slate-200 font-medium">Phase 2: Core HTTP Client & Response Inspector Active</span>
+              <span className="text-slate-200 font-medium">Phase 2: Core HTTP Client & Response Inspector</span>
               <span className="text-[11px] text-slate-400">
                 (Real HTTP/HTTPS Execution, Params, Headers, Body, Auth, Response Inspector, History)
               </span>
             </div>
+            <div className="flex items-center gap-2 text-emerald-400">
+              <CheckCircle2 size={14} />
+              <span className="text-slate-200 font-medium">Phase 3: Collections, Variables & Postman Active</span>
+              <span className="text-[11px] text-slate-400">
+                (Deterministic Precedence, Scoped Environments, Hierarchical Folders, Postman v2.1 Import/Export)
+              </span>
+            </div>
             <div className="flex items-center gap-2 text-slate-500">
               <div className="w-3.5 h-3.5 rounded-full border border-slate-600 flex items-center justify-center text-[9px]">
-                3
+                4
               </div>
-              <span>Phase 3: Collections, Variables, Environments & Postman Import/Export</span>
+              <span>Phase 4: Authentication & Isolated Script Engine (Awaiting Approval)</span>
             </div>
           </div>
         </div>

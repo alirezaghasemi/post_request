@@ -9,11 +9,15 @@
 | **Security** | Content Security Policy | Implemented & Tested | Phase 1 | Configured via session headers |
 | **Persistence** | SQLite WAL Persistence | Implemented & Tested | Phase 1 | `better-sqlite3` with migrations |
 | **Persistence** | Workspaces Management | Implemented & Tested | Phase 1 | CRUD operations via IPC |
-| **Persistence** | Collections Management | Implemented & Tested | Phase 1 | Saved in SQLite database |
-| **Persistence** | Environments Management | Implemented & Tested | Phase 1 | Saved in SQLite database |
+| **Persistence** | Collections Management | Implemented & Tested | Phase 3 | Hierarchical collections, folders, cascade delete |
+| **Persistence** | Environments Management | Implemented & Tested | Phase 3 | Scoped variables, secret masking, active switcher |
+| **Variables**   | Deterministic Precedence | Implemented & Tested | Phase 3 | Request > Environment > Collection > Global |
+| **Variables**   | Variable Interpolation | Implemented & Tested | Phase 3 | `{{var}}` resolution in URL, headers, params, body |
+| **Import/Export**| Postman Collection v2.1 | Implemented & Tested | Phase 3 | Import & Export with Import Report |
+| **Import/Export**| Postman Environment | Implemented & Tested | Phase 3 | Import & Export JSON |
 | **UI** | Custom Frameless TitleBar | Implemented & Tested | Phase 1 | Custom drag region & window buttons |
-| **UI** | Left Sidebar Navigation | Implemented & Tested | Phase 1 | Dense developer view with history |
-| **UI** | Multi-Tab Manager | Implemented & Tested | Phase 1 | Request, overview, settings tabs |
+| **UI** | Left Sidebar Navigation | Implemented & Tested | Phase 3 | Dense developer view with tree & history |
+| **UI** | Multi-Tab Manager | Implemented & Tested | Phase 1 | Request, overview, settings, environments tabs |
 | **UI** | Theme Switcher (Dark/Light) | Implemented & Tested | Phase 1 | Persisted to SQLite settings table |
 | **HTTP Client**| Request Builder & Sender | Implemented & Tested | Phase 2 | Real HTTP/HTTPS execution, Params, Headers, Body, Auth |
 | **HTTP Client**| Request Cancellation | Implemented & Tested | Phase 2 | Real-time cancellation via AbortController |

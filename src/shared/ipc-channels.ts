@@ -18,12 +18,26 @@ export const IPC_CHANNELS = {
   COLLECTION_UPDATE: 'collection:update',
   COLLECTION_DELETE: 'collection:delete',
 
+  // Folders
+  FOLDER_LIST: 'folder:list',
+  FOLDER_CREATE: 'folder:create',
+  FOLDER_DELETE: 'folder:delete',
+
   // Environments
   ENVIRONMENT_LIST: 'environment:list',
   ENVIRONMENT_GET: 'environment:get',
   ENVIRONMENT_CREATE: 'environment:create',
   ENVIRONMENT_UPDATE: 'environment:update',
   ENVIRONMENT_DELETE: 'environment:delete',
+
+  // Import / Export
+  IMPORT_POSTMAN_COLLECTION: 'import:postman-collection',
+  EXPORT_POSTMAN_COLLECTION: 'export:postman-collection',
+  IMPORT_POSTMAN_ENVIRONMENT: 'import:postman-environment',
+  EXPORT_POSTMAN_ENVIRONMENT: 'export:postman-environment',
+
+  // Variables
+  VARIABLE_RESOLVE: 'variable:resolve',
 
   // Requests
   REQUEST_LIST_BY_COLLECTION: 'request:list-by-collection',

@@ -4,12 +4,18 @@ import type { IpcResponse, SystemStatus } from '../../shared/types';
 import { validateIpcPayload } from './validator';
 import type { DatabaseManager } from '../database/database-manager';
 import { HttpClientEngine } from '../network/http-client';
+import { VariableResolver } from '../variables/resolver';
+import { PostmanImporter } from '../importers/postman-importer';
+import { PostmanExporter } from '../exporters/postman-exporter';
 
 export function registerIpcHandlers(
   dbManager: DatabaseManager,
   httpClient: HttpClientEngine,
   getMainWindow: () => BrowserWindow | null
 ): void {
+  const variableResolver = new VariableResolver();
+  const postmanImporter = new PostmanImporter();
+  const postmanExporter = new PostmanExporter();
   // Helper to wrap handlers in try/catch and payload validation
   function handle<TPayload, TResult>(
     channel: string,
@@ -108,6 +114,19 @@ export function registerIpcHandlers(
     return dbManager.deleteCollection(id);
   });
 
+  // Folders
+  handle(IPC_CHANNELS.FOLDER_LIST, (collectionId: string) => {
+    return dbManager.getFolders(collectionId);
+  });
+
+  handle(IPC_CHANNELS.FOLDER_CREATE, (data: { collectionId: string; parentFolderId?: string; name: string }) => {
+    return dbManager.createFolder(data);
+  });
+
+  handle(IPC_CHANNELS.FOLDER_DELETE, (id: string) => {
+    return dbManager.deleteFolder(id);
+  });
+
   // Environments
   handle(IPC_CHANNELS.ENVIRONMENT_LIST, (workspaceId: string) => {
     return dbManager.getEnvironments(workspaceId);
@@ -115,6 +134,49 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.ENVIRONMENT_CREATE, (data: { workspaceId: string; name: string }) => {
     return dbManager.createEnvironment(data);
+  });
+
+  handle(IPC_CHANNELS.ENVIRONMENT_UPDATE, ({ id, ...data }: any) => {
+    return dbManager.updateEnvironment(id, data);
+  });
+
+  handle(IPC_CHANNELS.ENVIRONMENT_DELETE, (id: string) => {
+    return dbManager.deleteEnvironment(id);
+  });
+
+  // Import / Export Postman
+  handle(IPC_CHANNELS.IMPORT_POSTMAN_COLLECTION, ({ json, workspaceId }: { json: any; workspaceId: string }) => {
+    const report = postmanImporter.importCollection(json, workspaceId);
+    dbManager.saveImportedCollection(report.collection, report.folders, report.requests);
+    return report;
+  });
+
+  handle(IPC_CHANNELS.EXPORT_POSTMAN_COLLECTION, (collectionId: string) => {
+    const collection = dbManager.getCollection(collectionId);
+    if (!collection) throw new Error('Collection not found');
+    const folders = dbManager.getFolders(collectionId);
+    const requests = dbManager.getRequestsByCollection(collectionId);
+    return postmanExporter.exportCollection(collection, folders, requests);
+  });
+
+  handle(IPC_CHANNELS.IMPORT_POSTMAN_ENVIRONMENT, ({ json, workspaceId }: { json: any; workspaceId: string }) => {
+    const env = postmanImporter.importEnvironment(json, workspaceId);
+    return dbManager.createEnvironment({
+      workspaceId,
+      name: env.name,
+      variables: env.variables
+    });
+  });
+
+  handle(IPC_CHANNELS.EXPORT_POSTMAN_ENVIRONMENT, (environmentId: string) => {
+    const env = dbManager.getEnvironment(environmentId);
+    if (!env) throw new Error('Environment not found');
+    return postmanExporter.exportEnvironment(env);
+  });
+
+  // Variable Resolution Helper
+  handle(IPC_CHANNELS.VARIABLE_RESOLVE, ({ template, context }: { template: string; context: any }) => {
+    return variableResolver.resolveWithDiagnostics(template, context);
   });
 
   // Requests
@@ -126,16 +188,42 @@ export function registerIpcHandlers(
     return dbManager.createRequest(data);
   });
 
-  // HTTP Execution Engine
+  // HTTP Execution Engine with Variable Resolution
   handle(IPC_CHANNELS.HTTP_EXECUTE, async (payload: any) => {
-    const response = await httpClient.execute(payload);
-    // Record in history if workspaceId is present
+    // 1. Resolve variables in payload using active environment and collection variables
+    let effectivePayload = payload;
+    if (payload.workspaceId) {
+      const environments = dbManager.getEnvironments(payload.workspaceId);
+      const activeEnv = environments.find((e) => e.isActive);
+
+      let collectionVars: any[] = [];
+      if (payload.collectionId) {
+        const col = dbManager.getCollection(payload.collectionId);
+        if (col?.variables) {
+          try {
+            collectionVars = JSON.parse(col.variables);
+          } catch {
+            // Ignored
+          }
+        }
+      }
+
+      effectivePayload = variableResolver.resolvePayload(payload, {
+        environment: activeEnv?.variables || [],
+        collection: collectionVars,
+        request: payload.localVariables || []
+      });
+    }
+
+    const response = await httpClient.execute(effectivePayload);
+
+    // Record in history
     if (payload.workspaceId) {
       try {
         dbManager.addHistoryEntry({
           workspaceId: payload.workspaceId,
-          method: payload.method,
-          url: payload.url,
+          method: effectivePayload.method,
+          url: effectivePayload.url,
           statusCode: response.status,
           timeMs: response.timeMs,
           sizeBytes: response.sizeBytes

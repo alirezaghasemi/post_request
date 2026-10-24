@@ -104,6 +104,32 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     return { valid: true };
   }
 
+  // Folder creation
+  if (channel === IPC_CHANNELS.FOLDER_CREATE) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
+    const data = payload as { collectionId?: unknown; name?: unknown };
+    if (typeof data.collectionId !== 'string' || data.collectionId.trim().length === 0) {
+      return { valid: false, error: 'collectionId is required' };
+    }
+    if (typeof data.name !== 'string' || data.name.trim().length === 0) {
+      return { valid: false, error: 'Name is required' };
+    }
+    return { valid: true };
+  }
+
+  // Import operations
+  if (
+    channel === IPC_CHANNELS.IMPORT_POSTMAN_COLLECTION ||
+    channel === IPC_CHANNELS.IMPORT_POSTMAN_ENVIRONMENT
+  ) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object' };
+    }
+    return { valid: true };
+  }
+
   // ID based lookups/deletions
   if (
     channel === IPC_CHANNELS.WORKSPACE_GET ||
@@ -111,7 +137,12 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     channel === IPC_CHANNELS.COLLECTION_GET ||
     channel === IPC_CHANNELS.COLLECTION_DELETE ||
     channel === IPC_CHANNELS.COLLECTION_LIST ||
+    channel === IPC_CHANNELS.FOLDER_LIST ||
+    channel === IPC_CHANNELS.FOLDER_DELETE ||
     channel === IPC_CHANNELS.ENVIRONMENT_LIST ||
+    channel === IPC_CHANNELS.ENVIRONMENT_DELETE ||
+    channel === IPC_CHANNELS.EXPORT_POSTMAN_COLLECTION ||
+    channel === IPC_CHANNELS.EXPORT_POSTMAN_ENVIRONMENT ||
     channel === IPC_CHANNELS.REQUEST_LIST_BY_COLLECTION
   ) {
     if (typeof payload !== 'string' || payload.trim().length === 0) {

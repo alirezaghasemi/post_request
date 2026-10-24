@@ -4,7 +4,9 @@ import type { Migration } from './migrations/types';
 import type {
   Workspace,
   Collection,
+  Folder,
   Environment,
+  EnvironmentVariable,
   AppSettings,
   RequestItem
 } from '../../shared/types';
@@ -224,6 +226,48 @@ export class DatabaseManager {
     return result.changes > 0;
   }
 
+  // --- Folders CRUD ---
+
+  public getFolders(collectionId: string): Folder[] {
+    this.ensureConnected();
+    const rows = this.db!.prepare(`
+      SELECT id, collection_id as collectionId, parent_folder_id as parentFolderId,
+             name, auth_config_json as authConfig, sort_order as sortOrder
+      FROM folders
+      WHERE collection_id = ?
+      ORDER BY sort_order ASC, name ASC
+    `).all(collectionId) as Folder[];
+    return rows;
+  }
+
+  public createFolder(data: {
+    collectionId: string;
+    parentFolderId?: string | null;
+    name: string;
+  }): Folder {
+    this.ensureConnected();
+    const id = randomUUID();
+
+    this.db!.prepare(`
+      INSERT INTO folders (id, collection_id, parent_folder_id, name, sort_order)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(id, data.collectionId, data.parentFolderId || null, data.name);
+
+    return {
+      id,
+      collectionId: data.collectionId,
+      parentFolderId: data.parentFolderId || null,
+      name: data.name,
+      sortOrder: 0
+    };
+  }
+
+  public deleteFolder(id: string): boolean {
+    this.ensureConnected();
+    const result = this.db!.prepare('DELETE FROM folders WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
   // --- Environments CRUD ---
 
   public getEnvironments(workspaceId: string): Environment[] {
@@ -255,6 +299,36 @@ export class DatabaseManager {
     }));
   }
 
+  public getEnvironment(id: string): Environment | null {
+    this.ensureConnected();
+    const row = this.db!.prepare(`
+      SELECT id, workspace_id as workspaceId, name, variables_json as variablesJson,
+             is_active as isActive, created_at as createdAt, updated_at as updatedAt
+      FROM environments
+      WHERE id = ?
+    `).get(id) as {
+      id: string;
+      workspaceId: string;
+      name: string;
+      variablesJson: string;
+      isActive: number;
+      createdAt: string;
+      updatedAt: string;
+    } | undefined;
+
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      workspaceId: row.workspaceId,
+      name: row.name,
+      variables: JSON.parse(row.variablesJson || '[]'),
+      isActive: Boolean(row.isActive),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    };
+  }
+
   public createEnvironment(data: { workspaceId: string; name: string; variables?: unknown[] }): Environment {
     this.ensureConnected();
     const id = randomUUID();
@@ -275,6 +349,113 @@ export class DatabaseManager {
       createdAt: now,
       updatedAt: now
     };
+  }
+
+  public updateEnvironment(
+    id: string,
+    data: { name?: string; variables?: EnvironmentVariable[]; isActive?: boolean }
+  ): Environment {
+    this.ensureConnected();
+    const rows = this.db!.prepare('SELECT * FROM environments WHERE id = ?').get(id) as any;
+    if (!rows) throw new Error(`Environment ${id} not found`);
+
+    const name = data.name ?? rows.name;
+    const variablesJson = data.variables !== undefined ? JSON.stringify(data.variables) : rows.variables_json;
+    const isActive = data.isActive !== undefined ? (data.isActive ? 1 : 0) : rows.is_active;
+    const now = new Date().toISOString();
+
+    // If setting active, deactivate others in the same workspace
+    if (data.isActive) {
+      this.db!.prepare('UPDATE environments SET is_active = 0 WHERE workspace_id = ?').run(rows.workspace_id);
+    }
+
+    this.db!.prepare(`
+      UPDATE environments
+      SET name = ?, variables_json = ?, is_active = ?, updated_at = ?
+      WHERE id = ?
+    `).run(name, variablesJson, isActive, now, id);
+
+    return {
+      id,
+      workspaceId: rows.workspace_id,
+      name,
+      variables: JSON.parse(variablesJson),
+      isActive: Boolean(isActive),
+      createdAt: rows.created_at,
+      updatedAt: now
+    };
+  }
+
+  public deleteEnvironment(id: string): boolean {
+    this.ensureConnected();
+    const result = this.db!.prepare('DELETE FROM environments WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  public saveImportedCollection(collection: Collection, folders: Folder[], requests: RequestItem[]): void {
+    this.ensureConnected();
+    const transaction = this.db!.transaction(() => {
+      // 1. Insert collection
+      this.db!.prepare(`
+        INSERT INTO collections (id, workspace_id, name, description, auth_config_json, variables_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        collection.id,
+        collection.workspaceId,
+        collection.name,
+        collection.description || '',
+        collection.authConfig || '{}',
+        collection.variables || '[]',
+        collection.createdAt,
+        collection.updatedAt
+      );
+
+      // 2. Insert folders
+      const insertFolder = this.db!.prepare(`
+        INSERT INTO folders (id, collection_id, parent_folder_id, name, auth_config_json, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+      for (const folder of folders) {
+        insertFolder.run(
+          folder.id,
+          folder.collectionId,
+          folder.parentFolderId || null,
+          folder.name,
+          folder.authConfig || '{}',
+          folder.sortOrder || 0
+        );
+      }
+
+      // 3. Insert requests
+      const insertRequest = this.db!.prepare(`
+        INSERT INTO requests (
+          id, collection_id, folder_id, name, method, url, headers_json, params_json,
+          body_json, auth_config_json, pre_script, test_script, sort_order, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      for (const req of requests) {
+        insertRequest.run(
+          req.id,
+          req.collectionId,
+          req.folderId || null,
+          req.name,
+          req.method,
+          req.url,
+          req.headers || '[]',
+          req.params || '[]',
+          req.body || '{}',
+          req.authConfig || '{}',
+          req.preScript || '',
+          req.testScript || '',
+          req.sortOrder || 0,
+          req.createdAt,
+          req.updatedAt
+        );
+      }
+    });
+
+    transaction();
   }
 
   // --- Requests CRUD ---
@@ -298,6 +479,13 @@ export class DatabaseManager {
     const id = randomUUID();
     const now = new Date().toISOString();
 
+    const headersStr = typeof data.headers === 'string' ? data.headers : JSON.stringify(data.headers || []);
+    const paramsStr = typeof data.params === 'string' ? data.params : JSON.stringify(data.params || []);
+    const bodyStr = typeof data.body === 'string' ? data.body : JSON.stringify(data.body || {});
+    const authConfigStr = typeof data.authConfig === 'string'
+      ? data.authConfig
+      : JSON.stringify(data.authConfig || (data as any).auth || {});
+
     this.db!.prepare(`
       INSERT INTO requests (
         id, collection_id, folder_id, name, method, url, headers_json, params_json,
@@ -311,10 +499,10 @@ export class DatabaseManager {
       data.name,
       data.method,
       data.url,
-      data.headers || '[]',
-      data.params || '[]',
-      data.body || '{}',
-      data.authConfig || '{}',
+      headersStr,
+      paramsStr,
+      bodyStr,
+      authConfigStr,
       data.preScript || '',
       data.testScript || '',
       data.sortOrder || 0,
@@ -327,18 +515,92 @@ export class DatabaseManager {
       collectionId: data.collectionId,
       folderId: data.folderId,
       name: data.name,
-      method: data.method,
+      method: data.method as any,
       url: data.url,
-      headers: data.headers,
-      params: data.params,
-      body: data.body,
-      authConfig: data.authConfig,
+      headers: headersStr,
+      params: paramsStr,
+      body: bodyStr,
+      authConfig: authConfigStr,
       preScript: data.preScript,
       testScript: data.testScript,
       sortOrder: data.sortOrder || 0,
       createdAt: now,
       updatedAt: now
     };
+  }
+
+  public getRequest(id: string): RequestItem | null {
+    this.ensureConnected();
+    const row = this.db!.prepare(`
+      SELECT id, collection_id as collectionId, folder_id as folderId, name, method, url,
+             headers_json as headers, params_json as params, body_json as body,
+             auth_config_json as authConfig, pre_script as preScript, test_script as testScript,
+             sort_order as sortOrder, created_at as createdAt, updated_at as updatedAt
+      FROM requests
+      WHERE id = ?
+    `).get(id) as RequestItem | undefined;
+
+    return row || null;
+  }
+
+  public updateRequest(id: string, data: Partial<RequestItem>): RequestItem {
+    this.ensureConnected();
+    const existing = this.getRequest(id);
+    if (!existing) throw new Error(`Request ${id} not found`);
+
+    const headersStr = data.headers !== undefined
+      ? (typeof data.headers === 'string' ? data.headers : JSON.stringify(data.headers))
+      : existing.headers;
+    const paramsStr = data.params !== undefined
+      ? (typeof data.params === 'string' ? data.params : JSON.stringify(data.params))
+      : existing.params;
+    const bodyStr = data.body !== undefined
+      ? (typeof data.body === 'string' ? data.body : JSON.stringify(data.body))
+      : existing.body;
+    const authConfigStr = data.authConfig !== undefined
+      ? (typeof data.authConfig === 'string' ? data.authConfig : JSON.stringify(data.authConfig))
+      : existing.authConfig;
+
+    const name = data.name ?? existing.name;
+    const method = data.method ?? existing.method;
+    const url = data.url ?? existing.url;
+    const preScript = data.preScript ?? existing.preScript;
+    const testScript = data.testScript ?? existing.testScript;
+    const sortOrder = data.sortOrder ?? existing.sortOrder;
+    const folderId = data.folderId !== undefined ? data.folderId : existing.folderId;
+    const now = new Date().toISOString();
+
+    this.db!.prepare(`
+      UPDATE requests
+      SET name = ?, method = ?, url = ?, headers_json = ?, params_json = ?,
+          body_json = ?, auth_config_json = ?, pre_script = ?, test_script = ?,
+          sort_order = ?, folder_id = ?, updated_at = ?
+      WHERE id = ?
+    `).run(name, method, url, headersStr, paramsStr, bodyStr, authConfigStr, preScript, testScript, sortOrder, folderId, now, id);
+
+    return {
+      id,
+      collectionId: existing.collectionId,
+      folderId,
+      name,
+      method: method as any,
+      url,
+      headers: headersStr,
+      params: paramsStr,
+      body: bodyStr,
+      authConfig: authConfigStr,
+      preScript,
+      testScript,
+      sortOrder,
+      createdAt: existing.createdAt,
+      updatedAt: now
+    };
+  }
+
+  public deleteRequest(id: string): boolean {
+    this.ensureConnected();
+    const result = this.db!.prepare('DELETE FROM requests WHERE id = ?').run(id);
+    return result.changes > 0;
   }
 
   // --- History CRUD ---

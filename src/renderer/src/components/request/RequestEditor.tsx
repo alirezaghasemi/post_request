@@ -23,11 +23,28 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
     cancelRequest,
     activeResponses,
     executingRequests,
-    createRequest
+    createRequest,
+    environments,
+    activeEnvironmentId
   } = useAppStore();
 
   const [method, setMethod] = useState<string>(tab.method || 'GET');
   const [url, setUrl] = useState<string>(tab.url || 'https://jsonplaceholder.typicode.com/todos/1');
+
+  // Compute live resolved URL for display
+  const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
+  const resolvedUrlPreview = React.useMemo(() => {
+    if (!url.includes('{{')) return null;
+    let res = url;
+    if (activeEnv) {
+      for (const v of activeEnv.variables) {
+        if (v.enabled) {
+          res = res.replaceAll(`{{${v.key}}}`, v.value);
+        }
+      }
+    }
+    return res;
+  }, [url, activeEnv]);
 
   // Request Config State
   const [activeConfigTab, setActiveConfigTab] = useState<'params' | 'headers' | 'auth' | 'body'>('params');
@@ -213,6 +230,14 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
           <span>{saveSuccess ? 'Saved!' : 'Save'}</span>
         </button>
       </div>
+
+      {/* Live Variable Resolution Preview */}
+      {resolvedUrlPreview && (
+        <div className="px-3 py-1 bg-blue-950/30 border-b border-blue-900/30 flex items-center gap-2 text-[11px] font-mono text-slate-400">
+          <span className="text-blue-400 font-semibold font-sans">Resolved URL:</span>
+          <span className="text-slate-200 truncate">{resolvedUrlPreview}</span>
+        </div>
+      )}
 
       {/* 2. Middle Split: Request Configuration (Top) & Response Inspector (Bottom) */}
       <div className="flex-1 flex flex-col overflow-hidden">
