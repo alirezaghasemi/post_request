@@ -215,6 +215,49 @@ export const electronAPI = {
     }
   },
 
+  // Phase 9: Proxy
+  proxy: {
+    start: (port?: number): Promise<{ isRunning: boolean; port: number }> =>
+      invoke(IPC_CHANNELS.PROXY_START, { port }),
+    stop: (): Promise<{ isRunning: boolean }> =>
+      invoke(IPC_CHANNELS.PROXY_STOP),
+    getStatus: (): Promise<{ isRunning: boolean; port: number }> =>
+      invoke(IPC_CHANNELS.PROXY_STATUS),
+    clear: (): Promise<{ cleared: boolean }> =>
+      invoke(IPC_CHANNELS.PROXY_CLEAR),
+    getTraffic: (): Promise<any[]> =>
+      invoke(IPC_CHANNELS.PROXY_GET_TRAFFIC),
+    saveToCollection: (trafficId: string, collectionId: string, name?: string): Promise<any> =>
+      invoke(IPC_CHANNELS.PROXY_SAVE_TO_COLLECTION, { trafficId, collectionId, name }),
+    onTraffic: (callback: (item: any) => void): (() => void) => {
+      const listener = (_event: any, payload: any) => callback(payload);
+      ipcRenderer.on('proxy:traffic', listener);
+      return () => ipcRenderer.removeListener('proxy:traffic', listener);
+    }
+  },
+
+  // Phase 9: Git Diff & Versioning
+  git: {
+    diffRequests: (before: any, after: any): Promise<any> =>
+      invoke(IPC_CHANNELS.GIT_DIFF_REQUESTS, { before, after }),
+    exportRepo: (collectionId: string, outputDir: string): Promise<any> =>
+      invoke(IPC_CHANNELS.GIT_EXPORT_REPO, { collectionId, outputDir })
+  },
+
+  // Phase 9: AI Assistant
+  ai: {
+    buildRequest: (prompt: string): Promise<any> =>
+      invoke(IPC_CHANNELS.AI_BUILD_REQUEST, { prompt }),
+    generateTests: (response: any): Promise<string> =>
+      invoke(IPC_CHANNELS.AI_GENERATE_TESTS, { response }),
+    generateDocs: (request: any, exampleResponse?: any): Promise<string> =>
+      invoke(IPC_CHANNELS.AI_GENERATE_DOCS, { request, exampleResponse }),
+    getConfig: (): Promise<any> =>
+      invoke(IPC_CHANNELS.AI_GET_CONFIG),
+    setConfig: (config: any): Promise<any> =>
+      invoke(IPC_CHANNELS.AI_SET_CONFIG, config)
+  },
+
   // Window Controls
   window: {
     minimize: (): void => ipcRenderer.send(IPC_CHANNELS.WINDOW_MINIMIZE),

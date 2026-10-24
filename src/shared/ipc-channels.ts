@@ -106,6 +106,25 @@ export const IPC_CHANNELS = {
   MQTT_DISCONNECT: 'mqtt:disconnect',
   MQTT_GET_HISTORY: 'mqtt:get-history',
 
+  // Phase 9: Proxy
+  PROXY_START: 'proxy:start',
+  PROXY_STOP: 'proxy:stop',
+  PROXY_STATUS: 'proxy:status',
+  PROXY_CLEAR: 'proxy:clear',
+  PROXY_GET_TRAFFIC: 'proxy:get-traffic',
+  PROXY_SAVE_TO_COLLECTION: 'proxy:save-to-collection',
+
+  // Phase 9: Git Diff & Versioning
+  GIT_DIFF_REQUESTS: 'git:diff-requests',
+  GIT_EXPORT_REPO: 'git:export-repo',
+
+  // Phase 9: AI Assistant
+  AI_BUILD_REQUEST: 'ai:build-request',
+  AI_GENERATE_TESTS: 'ai:generate-tests',
+  AI_GENERATE_DOCS: 'ai:generate-docs',
+  AI_GET_CONFIG: 'ai:get-config',
+  AI_SET_CONFIG: 'ai:set-config',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

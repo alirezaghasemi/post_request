@@ -76,12 +76,28 @@ Last Updated: Phase 5 Completion
     - One-click "Copy YAML" and "Download .github/workflows/devpilot-ci.yml".
     - Accessible directly from the Collections header in `Sidebar.tsx`, collection hover actions, and the `CollectionRunnerModal.tsx` report view.
 
+- **Advanced Features: Proxy, Git Diff & AI Assistant (Phase 9):**
+  - Local Intercepting Forward Proxy (`proxy-server.ts` & `ProxyModal.tsx`):
+    - Forward HTTP/HTTPS proxy server running on configurable port (default 8080).
+    - Captures full request/response traffic (methods, URLs, request/response headers, status codes, latencies, bodies).
+    - HTTPS CONNECT tunneling support.
+    - Live traffic inspection table with filtering by URL/Method/Status.
+    - One-click "Save to Collection": directly transforms captured traffic items into structured `RequestItem` instances persisted in SQLite.
+  - Git Diff & Versioning Engine (`versioning-engine.ts` & `GitDiffModal.tsx`):
+    - Field-by-field diff comparison engine detecting additions, deletions, and modifications across method, URL, headers, query params, request body, and test scripts.
+    - Side-by-side visual diff viewer with red/green diff highlights.
+    - Local Git repository exporter: dumps collections and requests into clean Git folder structure with `.gitignore` and auto-generated `README.md`.
+  - AI Assistant Engine (`ai-assistant.ts` & `AiAssistantModal.tsx`):
+    - Prompt-to-Request Builder: Converts natural language descriptions into structured HTTP requests with methods, endpoints, and JSON body extraction.
+    - Automated Postman Test Synthesizer: Analyzes response payloads and synthesizes complete Chai `pm.test(...)` assertions for status codes, latency thresholds, schema keys, and data types.
+    - API Documentation Generator: Generates markdown documentation with endpoint parameters and example responses.
+    - Multi-provider architecture: Built-in deterministic offline engine, Local Ollama, and OpenAI-compatible API providers.
+
 ## 2. Unimplemented Features (By Phase Roadmap)
-- Advanced features (Traffic Proxy, Git Diff & Versioning, AI Assistant) (Phase 9).
 - Production packaging, installer builds & release verification (Phase 10).
 
 ## 3. Test Coverage Summary
-- Unit & Integration Tests: 70 / 70 Passing (100%)
+- Unit & Integration Tests: 76 / 76 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -96,4 +112,5 @@ Last Updated: Phase 5 Completion
   - `tests/openapi-mock-docs.test.ts` (5 tests)
   - `tests/protocols-advanced.test.ts` (5 tests)
   - `tests/cli-runner.test.ts` (9 tests)
+  - `tests/advanced-features.test.ts` (6 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)

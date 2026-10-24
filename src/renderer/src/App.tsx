@@ -16,6 +16,9 @@ import { GraphQLModal } from './components/protocols/GraphQLModal';
 import { WebSocketModal } from './components/protocols/WebSocketModal';
 import { MqttModal } from './components/protocols/MqttModal';
 import { CiWorkflowModal } from './components/ci/CiWorkflowModal';
+import { ProxyModal } from './components/proxy/ProxyModal';
+import { GitDiffModal } from './components/git/GitDiffModal';
+import { AiAssistantModal } from './components/ai/AiAssistantModal';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
@@ -29,6 +32,10 @@ export const App: React.FC = () => {
   const [mqttModalOpen, setMqttModalOpen] = useState<boolean>(false);
   const [ciModalOpen, setCiModalOpen] = useState<boolean>(false);
   const [ciCollectionId, setCiCollectionId] = useState<string | undefined>(undefined);
+  const [proxyModalOpen, setProxyModalOpen] = useState<boolean>(false);
+  const [gitDiffModalOpen, setGitDiffModalOpen] = useState<boolean>(false);
+  const [gitDiffCollectionId, setGitDiffCollectionId] = useState<string | undefined>(undefined);
+  const [aiModalOpen, setAiModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     init();
@@ -59,6 +66,12 @@ export const App: React.FC = () => {
             setCiCollectionId(id);
             setCiModalOpen(true);
           }}
+          onOpenProxy={() => setProxyModalOpen(true)}
+          onOpenGitDiff={(id) => {
+            setGitDiffCollectionId(id);
+            setGitDiffModalOpen(true);
+          }}
+          onOpenAi={() => setAiModalOpen(true)}
         />
 
         {/* Center/Right Workspace Area */}
@@ -151,6 +164,25 @@ export const App: React.FC = () => {
         isOpen={ciModalOpen}
         onClose={() => setCiModalOpen(false)}
         defaultCollectionId={ciCollectionId}
+      />
+
+      {/* 12. Phase 9: Traffic Proxy Modal */}
+      <ProxyModal
+        isOpen={proxyModalOpen}
+        onClose={() => setProxyModalOpen(false)}
+      />
+
+      {/* 13. Phase 9: Git Diff & Versioning Modal */}
+      <GitDiffModal
+        isOpen={gitDiffModalOpen}
+        onClose={() => setGitDiffModalOpen(false)}
+        defaultCollectionId={gitDiffCollectionId}
+      />
+
+      {/* 14. Phase 9: AI Assistant Modal */}
+      <AiAssistantModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
       />
     </div>
   );

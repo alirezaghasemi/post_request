@@ -261,5 +261,53 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     return { valid: true };
   }
 
+  // Phase 9: Proxy
+  if (channel === IPC_CHANNELS.PROXY_SAVE_TO_COLLECTION) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { trafficId?: unknown; collectionId?: unknown };
+    if (typeof data.trafficId !== 'string' || !data.trafficId.trim()) return { valid: false, error: 'trafficId is required' };
+    if (typeof data.collectionId !== 'string' || !data.collectionId.trim()) return { valid: false, error: 'collectionId is required' };
+    return { valid: true };
+  }
+
+  // Phase 9: Git Diff & Versioning
+  if (channel === IPC_CHANNELS.GIT_DIFF_REQUESTS) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { before?: unknown; after?: unknown };
+    if (!data.before || typeof data.before !== 'object') return { valid: false, error: 'before request is required' };
+    if (!data.after || typeof data.after !== 'object') return { valid: false, error: 'after request is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.GIT_EXPORT_REPO) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { collectionId?: unknown; outputDir?: unknown };
+    if (typeof data.collectionId !== 'string' || !data.collectionId.trim()) return { valid: false, error: 'collectionId is required' };
+    if (typeof data.outputDir !== 'string' || !data.outputDir.trim()) return { valid: false, error: 'outputDir is required' };
+    return { valid: true };
+  }
+
+  // Phase 9: AI Assistant
+  if (channel === IPC_CHANNELS.AI_BUILD_REQUEST) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { prompt?: unknown };
+    if (typeof data.prompt !== 'string' || !data.prompt.trim()) return { valid: false, error: 'prompt is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.AI_GENERATE_TESTS) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { response?: unknown };
+    if (!data.response || typeof data.response !== 'object') return { valid: false, error: 'response object is required' };
+    return { valid: true };
+  }
+
+  if (channel === IPC_CHANNELS.AI_GENERATE_DOCS) {
+    if (!payload || typeof payload !== 'object') return { valid: false, error: 'Payload must be an object' };
+    const data = payload as { request?: unknown };
+    if (!data.request || typeof data.request !== 'object') return { valid: false, error: 'request object is required' };
+    return { valid: true };
+  }
+
   return { valid: true };
 }

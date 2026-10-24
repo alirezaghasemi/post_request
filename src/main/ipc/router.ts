@@ -20,6 +20,9 @@ import { generateCodeSnippet } from '../../shared/code-generator';
 import { executeGraphQL, buildIntrospectionQuery } from '../protocols/graphql-client';
 import { WebSocketClientManager } from '../protocols/websocket-client';
 import { MqttClientManager } from '../protocols/mqtt-client';
+import { InterceptingProxyServer } from '../proxy/proxy-server';
+import { VersioningEngine } from '../git/versioning-engine';
+import { AiAssistant } from '../ai/ai-assistant';
 import type { ScriptLog, ScriptTestResult } from '../../shared/types';
 
 export function registerIpcHandlers(
@@ -36,6 +39,15 @@ export function registerIpcHandlers(
   const mockServer = new LocalMockServer();
   const wsManager = new WebSocketClientManager();
   const mqttManager = new MqttClientManager();
+  const proxyServer = new InterceptingProxyServer((item) => {
+    const win = getMainWindow();
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('proxy:traffic', item);
+    }
+  });
+  const versioningEngine = new VersioningEngine();
+  const aiAssistant = new AiAssistant();
+
   const collectionRunner = new CollectionRunner({
     dbManager,
     httpClient,
@@ -568,6 +580,71 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.MQTT_GET_HISTORY, ({ clientId }: { clientId: string }) => {
     return mqttManager.getHistory(clientId);
+  });
+
+  // Phase 9: Proxy
+  handle(IPC_CHANNELS.PROXY_START, async (payload: { port?: number }) => {
+    const port = await proxyServer.start(payload?.port || 8080);
+    return { isRunning: true, port };
+  });
+
+  handle(IPC_CHANNELS.PROXY_STOP, async () => {
+    await proxyServer.stop();
+    return { isRunning: false };
+  });
+
+  handle(IPC_CHANNELS.PROXY_STATUS, () => {
+    return { isRunning: proxyServer.isRunning(), port: proxyServer.getPort() };
+  });
+
+  handle(IPC_CHANNELS.PROXY_CLEAR, () => {
+    proxyServer.clearTraffic();
+    return { cleared: true };
+  });
+
+  handle(IPC_CHANNELS.PROXY_GET_TRAFFIC, () => {
+    return proxyServer.getCapturedTraffic();
+  });
+
+  handle(IPC_CHANNELS.PROXY_SAVE_TO_COLLECTION, ({ trafficId, collectionId, name }: { trafficId: string; collectionId: string; name?: string }) => {
+    const requestItem = proxyServer.convertToRequestItem(trafficId, collectionId, name);
+    if (!requestItem) throw new Error('Traffic item not found');
+    dbManager.createRequest(requestItem);
+    return requestItem;
+  });
+
+  // Phase 9: Git Diff & Versioning
+  handle(IPC_CHANNELS.GIT_DIFF_REQUESTS, ({ before, after }: { before: any; after: any }) => {
+    return versioningEngine.diffRequests(before, after);
+  });
+
+  handle(IPC_CHANNELS.GIT_EXPORT_REPO, ({ collectionId, outputDir }: { collectionId: string; outputDir: string }) => {
+    const collection = dbManager.getCollection(collectionId);
+    if (!collection) throw new Error('Collection not found');
+    const requests = dbManager.getRequestsByCollection(collectionId);
+    return versioningEngine.exportToGitDirectory({ collection, requests }, outputDir);
+  });
+
+  // Phase 9: AI Assistant
+  handle(IPC_CHANNELS.AI_BUILD_REQUEST, async ({ prompt }: { prompt: string }) => {
+    return aiAssistant.buildRequestFromPrompt(prompt);
+  });
+
+  handle(IPC_CHANNELS.AI_GENERATE_TESTS, ({ response }: { response: any }) => {
+    return aiAssistant.generateTestsFromResponse(response);
+  });
+
+  handle(IPC_CHANNELS.AI_GENERATE_DOCS, ({ request, exampleResponse }: { request: any; exampleResponse?: any }) => {
+    return aiAssistant.generateDocumentation(request, exampleResponse);
+  });
+
+  handle(IPC_CHANNELS.AI_GET_CONFIG, () => {
+    return aiAssistant.getConfig();
+  });
+
+  handle(IPC_CHANNELS.AI_SET_CONFIG, (config: any) => {
+    aiAssistant.setConfig(config);
+    return aiAssistant.getConfig();
   });
 
   // Window Controls

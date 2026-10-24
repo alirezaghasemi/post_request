@@ -15,7 +15,10 @@ import {
   Code2,
   Radio,
   Wifi,
-  Workflow
+  Workflow,
+  Shield,
+  GitCompare,
+  Sparkles
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -28,6 +31,9 @@ interface SidebarProps {
   onOpenWebSocket?: () => void;
   onOpenMqtt?: () => void;
   onOpenCiWorkflow?: (collectionId?: string) => void;
+  onOpenProxy?: () => void;
+  onOpenGitDiff?: (collectionId?: string) => void;
+  onOpenAi?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -38,7 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenGraphQL,
   onOpenWebSocket,
   onOpenMqtt,
-  onOpenCiWorkflow
+  onOpenCiWorkflow,
+  onOpenProxy,
+  onOpenGitDiff,
+  onOpenAi
 }) => {
   const {
     workspaces,
@@ -191,6 +200,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className="text-slate-400 hover:text-indigo-400"
                 >
                   <Workflow size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenProxy?.()}
+                  title="Traffic Proxy (Capture Network)"
+                  className="text-slate-400 hover:text-emerald-400"
+                >
+                  <Shield size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenGitDiff?.()}
+                  title="Git Diff & Versioning"
+                  className="text-slate-400 hover:text-orange-400"
+                >
+                  <GitCompare size={13} />
+                </button>
+                <button
+                  onClick={() => onOpenAi?.()}
+                  title="AI Assistant (Prompt, Tests, Docs)"
+                  className="text-slate-400 hover:text-violet-400"
+                >
+                  <Sparkles size={13} />
                 </button>
                 <button
                   onClick={() => setShowNewCollectionModal(true)}
