@@ -168,6 +168,27 @@ export class PostmanImporter {
           }
         }
 
+        // Parse Scripts (prerequest & test)
+        let preScript = '';
+        let testScript = '';
+        if (Array.isArray(item.event)) {
+          for (const ev of item.event) {
+            if (ev.listen === 'prerequest' && ev.script) {
+              if (Array.isArray(ev.script.exec)) {
+                preScript = ev.script.exec.join('\n');
+              } else if (typeof ev.script.exec === 'string') {
+                preScript = ev.script.exec;
+              }
+            } else if (ev.listen === 'test' && ev.script) {
+              if (Array.isArray(ev.script.exec)) {
+                testScript = ev.script.exec.join('\n');
+              } else if (typeof ev.script.exec === 'string') {
+                testScript = ev.script.exec;
+              }
+            }
+          }
+        }
+
         const requestItem: RequestItem = {
           id: randomUUID(),
           collectionId,
@@ -178,6 +199,8 @@ export class PostmanImporter {
           headers: JSON.stringify(headers),
           params: JSON.stringify(params),
           body: bodyJson,
+          preScript: preScript || undefined,
+          testScript: testScript || undefined,
           sortOrder: requests.length,
           createdAt: now,
           updatedAt: now

@@ -10,6 +10,6 @@
 | **5** | Automated Tests & Collection Runner | **Completed** |
 | **6** | OpenAPI 3.x Import, Documentation Generator, Local Mock Server | **Completed** |
 | **7** | Additional Protocols (GraphQL, WebSocket, Socket.IO, gRPC, MQTT) | **Completed** |
-| **8** | Headless CLI & CI/CD Automation | Pending Approval |
-| **9** | Advanced Features (Traffic Proxy, Git Diff & Versioning, AI Assistant) | Scheduled |
+| **8** | Headless CLI & CI/CD Automation | **Completed** |
+| **9** | Advanced Features (Traffic Proxy, Git Diff & Versioning, AI Assistant) | Pending Approval |
 | **10** | Production Hardening, Cross-Platform Packaging & Release Verification | Scheduled |

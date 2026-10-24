@@ -19,6 +19,7 @@
   },
   "include": [
     "src/main/**/*.ts",
+    "src/cli/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
     "vite.config.ts"

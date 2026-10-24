@@ -15,6 +15,7 @@ import { DocsExportModal } from './components/docs/DocsExportModal';
 import { GraphQLModal } from './components/protocols/GraphQLModal';
 import { WebSocketModal } from './components/protocols/WebSocketModal';
 import { MqttModal } from './components/protocols/MqttModal';
+import { CiWorkflowModal } from './components/ci/CiWorkflowModal';
 
 export const App: React.FC = () => {
   const { init, tabs, activeTabId, loading, error } = useAppStore();
@@ -26,6 +27,8 @@ export const App: React.FC = () => {
   const [graphqlModalOpen, setGraphqlModalOpen] = useState<boolean>(false);
   const [websocketModalOpen, setWebsocketModalOpen] = useState<boolean>(false);
   const [mqttModalOpen, setMqttModalOpen] = useState<boolean>(false);
+  const [ciModalOpen, setCiModalOpen] = useState<boolean>(false);
+  const [ciCollectionId, setCiCollectionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     init();
@@ -52,6 +55,10 @@ export const App: React.FC = () => {
           onOpenGraphQL={() => setGraphqlModalOpen(true)}
           onOpenWebSocket={() => setWebsocketModalOpen(true)}
           onOpenMqtt={() => setMqttModalOpen(true)}
+          onOpenCiWorkflow={(id) => {
+            setCiCollectionId(id);
+            setCiModalOpen(true);
+          }}
         />
 
         {/* Center/Right Workspace Area */}
@@ -92,6 +99,10 @@ export const App: React.FC = () => {
           collectionId={runnerCollectionId}
           isOpen={Boolean(runnerCollectionId)}
           onClose={() => setRunnerCollectionId(null)}
+          onOpenCiWorkflow={(id) => {
+            setCiCollectionId(id);
+            setCiModalOpen(true);
+          }}
         />
       )}
 
@@ -133,6 +144,13 @@ export const App: React.FC = () => {
       <MqttModal
         isOpen={mqttModalOpen}
         onClose={() => setMqttModalOpen(false)}
+      />
+
+      {/* 11. Phase 8: CI/CD Workflow Generator Modal */}
+      <CiWorkflowModal
+        isOpen={ciModalOpen}
+        onClose={() => setCiModalOpen(false)}
+        defaultCollectionId={ciCollectionId}
       />
     </div>
   );

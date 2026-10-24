@@ -98,6 +98,18 @@ export class ScriptSandbox {
             `Expected ${JSON.stringify(actual)} to equal ${JSON.stringify(expected)}`
           );
         },
+        equals(expected: any) {
+          assert(
+            actual === expected,
+            `Expected ${JSON.stringify(actual)} to equal ${JSON.stringify(expected)}`
+          );
+        },
+        eql(expected: any) {
+          assert(
+            actual == expected || JSON.stringify(actual) === JSON.stringify(expected),
+            `Expected ${JSON.stringify(actual)} to deeply equal ${JSON.stringify(expected)}`
+          );
+        },
         a(expectedType: string) {
           const type = Array.isArray(actual) ? 'array' : typeof actual;
           assert(

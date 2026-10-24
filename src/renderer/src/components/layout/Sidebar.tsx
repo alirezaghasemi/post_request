@@ -14,7 +14,8 @@ import {
   FileCode,
   Code2,
   Radio,
-  Wifi
+  Wifi,
+  Workflow
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -26,6 +27,7 @@ interface SidebarProps {
   onOpenGraphQL?: () => void;
   onOpenWebSocket?: () => void;
   onOpenMqtt?: () => void;
+  onOpenCiWorkflow?: (collectionId?: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -35,7 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenOpenApiImport,
   onOpenGraphQL,
   onOpenWebSocket,
-  onOpenMqtt
+  onOpenMqtt,
+  onOpenCiWorkflow
 }) => {
   const {
     workspaces,
@@ -183,6 +186,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Wifi size={13} />
                 </button>
                 <button
+                  onClick={() => onOpenCiWorkflow?.()}
+                  title="CI/CD Automation (GitHub Actions)"
+                  className="text-slate-400 hover:text-indigo-400"
+                >
+                  <Workflow size={13} />
+                </button>
+                <button
                   onClick={() => setShowNewCollectionModal(true)}
                   title="New Collection"
                   className="text-slate-400 hover:text-blue-400"
@@ -253,6 +263,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           className="p-0.5 hover:text-emerald-400"
                         >
                           <Play size={12} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenCiWorkflow?.(col.id);
+                          }}
+                          title="Generate CI/CD Pipeline"
+                          className="p-0.5 hover:text-indigo-400"
+                        >
+                          <Workflow size={12} />
                         </button>
                         <button
                           onClick={async (e) => {

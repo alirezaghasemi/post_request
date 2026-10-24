@@ -7,7 +7,10 @@ import type { CollectionRunReport, RunnerStepResult } from './report-exporter';
 import type { HttpRequestExecutionPayload, RequestItem, KeyValuePair } from '../../shared/types';
 
 export interface CollectionRunnerConfig {
-  collectionId: string;
+  collectionId?: string;
+  inMemoryCollection?: any;
+  inMemoryRequests?: RequestItem[];
+  inMemoryEnvironment?: any;
   folderId?: string;
   selectedRequestIds?: string[];
   iterations?: number;
@@ -19,14 +22,14 @@ export interface CollectionRunnerConfig {
 }
 
 export interface CollectionRunnerDependencies {
-  dbManager: DatabaseManager;
+  dbManager?: DatabaseManager;
   httpClient: HttpClientEngine;
   scriptSandbox: ScriptSandbox;
   variableResolver: VariableResolver;
 }
 
 export class CollectionRunner {
-  private dbManager: DatabaseManager;
+  private dbManager?: DatabaseManager;
   private httpClient: HttpClientEngine;
   private scriptSandbox: ScriptSandbox;
   private variableResolver: VariableResolver;
@@ -48,10 +51,10 @@ export class CollectionRunner {
     const runId = randomUUID();
     const startedAt = new Date().toISOString();
 
-    const collection = this.dbManager.getCollection(config.collectionId);
+    const collection = config.inMemoryCollection || (config.collectionId && this.dbManager ? this.dbManager.getCollection(config.collectionId) : null);
     const collectionName = collection ? collection.name : 'Collection Run';
 
-    let allRequests = this.dbManager.getRequestsByCollection(config.collectionId);
+    let allRequests: RequestItem[] = config.inMemoryRequests || (config.collectionId && this.dbManager ? this.dbManager.getRequestsByCollection(config.collectionId) : []);
     if (config.folderId) {
       allRequests = allRequests.filter((r) => r.folderId === config.folderId);
     }
@@ -68,11 +71,11 @@ export class CollectionRunner {
     const startTime = Date.now();
 
     // Load Environment
-    let activeEnv = config.environmentId
+    let activeEnv = config.inMemoryEnvironment || (config.environmentId && this.dbManager
       ? this.dbManager.getEnvironment(config.environmentId)
-      : null;
+      : null);
 
-    if (!activeEnv && collection?.workspaceId) {
+    if (!activeEnv && collection?.workspaceId && this.dbManager) {
       const envs = this.dbManager.getEnvironments(collection.workspaceId);
       activeEnv = envs.find((e) => e.isActive) || null;
     }
@@ -81,7 +84,9 @@ export class CollectionRunner {
     let collectionVars: any[] = [];
     if (collection?.variables) {
       try {
-        collectionVars = JSON.parse(collection.variables);
+        collectionVars = typeof collection.variables === 'string'
+          ? JSON.parse(collection.variables)
+          : collection.variables;
       } catch {
         // Ignored
       }
@@ -169,7 +174,7 @@ export class CollectionRunner {
 
     return {
       id: runId,
-      collectionId: config.collectionId,
+      collectionId: config.collectionId || collection?.id || 'in-memory-collection',
       collectionName,
       totalRequests: results.length,
       totalPassed,

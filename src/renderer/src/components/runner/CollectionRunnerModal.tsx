@@ -7,7 +7,8 @@ import {
   Download,
   RotateCcw,
   Sliders,
-  Check
+  Check,
+  Workflow
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import type { RequestItem, CollectionRunReport, RunnerStepResult } from '@shared/types';
@@ -16,12 +17,14 @@ interface CollectionRunnerModalProps {
   collectionId: string;
   isOpen: boolean;
   onClose: () => void;
+  onOpenCiWorkflow?: (collectionId: string) => void;
 }
 
 export const CollectionRunnerModal: React.FC<CollectionRunnerModalProps> = ({
   collectionId,
   isOpen,
-  onClose
+  onClose,
+  onOpenCiWorkflow
 }) => {
   const { collections, requestsByCollection } = useAppStore();
   const collection = collections.find((c) => c.id === collectionId);
@@ -314,6 +317,14 @@ export const CollectionRunnerModal: React.FC<CollectionRunnerModalProps> = ({
                     >
                       <FileCode size={13} />
                       <span>Export JSON Report</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onOpenCiWorkflow?.(collectionId)}
+                      className="w-full py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded font-medium flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Workflow size={13} />
+                      <span>Generate CI/CD Pipeline</span>
                     </button>
                     <button
                       type="button"

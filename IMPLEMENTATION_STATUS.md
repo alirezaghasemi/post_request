@@ -63,13 +63,25 @@ Last Updated: Phase 5 Completion
     - `MqttModal.tsx`: Broker connection settings, topic subscription manager with QoS tags, publisher panel, and real-time incoming message log.
     - Protocol launchers accessible directly from the Collections header in `Sidebar.tsx`.
 
+- **Headless CLI & CI/CD Automation (Phase 8):**
+  - Standalone Executable CLI Runner (`bin/devpilot.js` & `src/cli/`):
+    - Full Newman-compatible CLI engine executable without requiring Electron GUI.
+    - Command flags: `-e, --environment <path>`, `-d, --data <path>`, `-n, --iterations <n>`, `--delay-request <ms>`, `--bail` (fail-fast), `--reporters <cli,junit,json>`, `--reporter-junit-export <path>`, `--reporter-json-export <path>`, `-h, --help`, `-v, --version`.
+    - Strict CI exit codes: `0` (all assertions passed), `1` (one or more test assertions failed), `2` (runtime error, malformed file, bad arguments).
+    - Rich ANSI terminal output: colorized summary banner, status codes, per-request timing, pass/fail test indicators, and execution summary.
+    - Standard JUnit XML reporter compatible with GitHub Actions, Jenkins, and GitLab CI dashboards.
+    - Comprehensive JSON test execution report generator.
+  - Interactive CI/CD Automation Generator in UI (`CiWorkflowModal.tsx`):
+    - Live GitHub Actions YAML workflow generator with parameters for target collection, environment, iteration data, iterations count, and fail-fast bail option.
+    - One-click "Copy YAML" and "Download .github/workflows/devpilot-ci.yml".
+    - Accessible directly from the Collections header in `Sidebar.tsx`, collection hover actions, and the `CollectionRunnerModal.tsx` report view.
+
 ## 2. Unimplemented Features (By Phase Roadmap)
-- Headless CLI & CI/CD automation runner (Phase 8).
 - Advanced features (Traffic Proxy, Git Diff & Versioning, AI Assistant) (Phase 9).
 - Production packaging, installer builds & release verification (Phase 10).
 
 ## 3. Test Coverage Summary
-- Unit & Integration Tests: 61 / 61 Passing (100%)
+- Unit & Integration Tests: 70 / 70 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -83,4 +95,5 @@ Last Updated: Phase 5 Completion
   - `tests/collection-runner.test.ts` (6 tests)
   - `tests/openapi-mock-docs.test.ts` (5 tests)
   - `tests/protocols-advanced.test.ts` (5 tests)
+  - `tests/cli-runner.test.ts` (9 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)
