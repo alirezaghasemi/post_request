@@ -18,8 +18,29 @@ export function validateIpcPayload(channel: IpcChannel, payload: unknown): Valid
     channel === IPC_CHANNELS.WORKSPACE_LIST ||
     channel === IPC_CHANNELS.WINDOW_MINIMIZE ||
     channel === IPC_CHANNELS.WINDOW_MAXIMIZE ||
-    channel === IPC_CHANNELS.WINDOW_CLOSE
+    channel === IPC_CHANNELS.WINDOW_CLOSE ||
+    channel === IPC_CHANNELS.AUTH_OAUTH2_GENERATE_PKCE
   ) {
+    return { valid: true };
+  }
+
+  // Script execution validation
+  if (channel === IPC_CHANNELS.SCRIPT_RUN) {
+    if (!payload || typeof payload !== 'object') {
+      return { valid: false, error: 'Payload must be an object with script string' };
+    }
+    return { valid: true };
+  }
+
+  // Vault operations
+  if (
+    channel === IPC_CHANNELS.VAULT_ENCRYPT ||
+    channel === IPC_CHANNELS.VAULT_DECRYPT ||
+    channel === IPC_CHANNELS.VAULT_MASK
+  ) {
+    if (typeof payload !== 'string') {
+      return { valid: false, error: 'Payload must be a string' };
+    }
     return { valid: true };
   }
 

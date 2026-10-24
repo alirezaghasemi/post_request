@@ -73,7 +73,31 @@ export interface RequestBodyConfig {
   urlencodedData?: KeyValuePair[];
 }
 
-export type AuthType = 'none' | 'bearer' | 'basic' | 'apikey';
+export type AuthType = 'none' | 'bearer' | 'basic' | 'apikey' | 'digest' | 'oauth2';
+
+export interface DigestAuthConfig {
+  username?: string;
+  password?: string;
+  realm?: string;
+  nonce?: string;
+  algorithm?: string;
+  qop?: string;
+}
+
+export interface OAuth2Config {
+  grantType: 'authorization_code' | 'client_credentials';
+  authUrl?: string;
+  tokenUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  scope?: string;
+  state?: string;
+  codeVerifier?: string;
+  codeChallenge?: string;
+  accessToken?: string;
+  tokenType?: string;
+  addTokenTo?: 'header' | 'query';
+}
 
 export interface AuthConfig {
   type: AuthType;
@@ -83,6 +107,20 @@ export interface AuthConfig {
   apiKeyName?: string;
   apiKeyValue?: string;
   apiKeyAddTo?: 'header' | 'query';
+  digest?: DigestAuthConfig;
+  oauth2?: OAuth2Config;
+}
+
+export interface ScriptLog {
+  level: 'log' | 'info' | 'warn' | 'error';
+  message: string;
+  timestamp: string;
+}
+
+export interface ScriptTestResult {
+  name: string;
+  passed: boolean;
+  error?: string;
 }
 
 export interface HttpRequestExecutionPayload {
@@ -93,8 +131,13 @@ export interface HttpRequestExecutionPayload {
   headers: KeyValuePair[];
   body: RequestBodyConfig;
   auth: AuthConfig;
+  preScript?: string;
+  testScript?: string;
   timeoutMs?: number;
   followRedirects?: boolean;
+  workspaceId?: string;
+  collectionId?: string;
+  localVariables?: EnvironmentVariable[];
 }
 
 export interface HttpResponseCookie {
@@ -119,6 +162,8 @@ export interface HttpResponseData {
   contentType: string;
   isTruncated: boolean;
   error?: string;
+  tests?: ScriptTestResult[];
+  logs?: ScriptLog[];
 }
 
 export interface HistoryItem {

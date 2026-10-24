@@ -1,6 +1,6 @@
 # DevPilot API Studio — Implementation Status
 
-Last Updated: Phase 3 Completion
+Last Updated: Phase 4 Completion
 
 ## 1. Completed Features
 - **Electron Foundation (Phase 1):** Electron 33 configured with strict process separation, secure window creation, and frameless window controls.
@@ -30,18 +30,24 @@ Last Updated: Phase 3 Completion
   - Active environment switcher directly integrated into the TitleBar header.
   - Hierarchical Collections & Folders structure (nested folders, request assignment, foreign key cascade deletion).
   - Postman Importer & Exporter: Postman Collection Schema v2.1.0/v2.0.0 and Postman Environment format support with Import Report.
+- **Advanced Authentication, Secrets Vault & Script Engine (Phase 4):**
+  - Isolated V8 Script Sandbox: Hardened environment with zero access to `fs`, `child_process`, `net`, `process`, or global escapes. Enforces 3000ms execution timeout and memory safety.
+  - Postman Scripting API (`pm.*`): Supports `pm.test()`, `pm.expect()`, `pm.response` (status code, body JSON, text, headers), `pm.environment.get/set`, and `pm.variables`.
+  - Pre-request and Post-response Execution: Executes pre-request scripts before dispatch, updates environment dynamically, executes tests post-response, and captures test assertions.
+  - Advanced Auth: RFC 7616 / RFC 2617 Digest Auth handler, OAuth 2.0 PKCE code verifier and challenge generator (S256), and Client Credentials grant token requester.
+  - Local Secrets Vault: Authenticated AES-256-GCM encryption with local key protection (0600 mode) and sensitive value display masking.
+  - Script & Test UI: Dedicated ScriptEditor with Postman snippet templates, Test Results visual inspector cards (Pass/Fail breakdown), and script execution Console log viewer.
 
 ## 2. Partially Implemented Features
-- **Script Engine:** Variables are integrated with HTTP payloads; custom `pm.test` sandboxed scripting is scheduled for Phase 4.
+- **Collection Automation:** Single-request tests and pre-scripts are functional; automated multi-request iteration runner is scheduled for Phase 5.
 
 ## 3. Unimplemented Features (By Phase Roadmap)
-- Isolated script execution engine for pre-request and tests (Phase 4).
-- Collection automated test runner (Phase 5).
+- Collection automated test runner & CSV/JSON iteration data (Phase 5).
 - OpenAPI 3.x import and local mock server (Phase 6).
 - Additional protocols (GraphQL, WebSocket, gRPC, MQTT) (Phase 7).
 
 ## 4. Test Coverage Summary
-- Unit & Integration Tests: 32 / 32 Passing (100%)
+- Unit & Integration Tests: 45 / 45 Passing (100%)
   - `tests/database.test.ts` (5 tests)
   - `tests/ipc-validation.test.ts` (4 tests)
   - `tests/security.test.ts` (4 tests)
@@ -49,4 +55,7 @@ Last Updated: Phase 3 Completion
   - `tests/variable-resolver.test.ts` (5 tests)
   - `tests/postman-importer.test.ts` (3 tests)
   - `tests/collections-tree.test.ts` (4 tests)
+  - `tests/auth-advanced.test.ts` (4 tests)
+  - `tests/script-sandbox.test.ts` (6 tests)
+  - `tests/vault-encryption.test.ts` (3 tests)
 - Launch Smoke Test: 1 / 1 Passing (100%)

@@ -101,6 +101,27 @@ export const electronAPI = {
     clear: (workspaceId: string): Promise<boolean> => invoke(IPC_CHANNELS.HISTORY_CLEAR, workspaceId)
   },
 
+  // Scripting
+  scripting: {
+    run: (script: string, context?: any): Promise<any> =>
+      invoke(IPC_CHANNELS.SCRIPT_RUN, { script, context })
+  },
+
+  // Advanced Auth
+  auth: {
+    generatePKCE: (): Promise<{ codeVerifier: string; codeChallenge: string; codeChallengeMethod: string }> =>
+      invoke(IPC_CHANNELS.AUTH_OAUTH2_GENERATE_PKCE),
+    getOAuth2Token: (options: any): Promise<any> =>
+      invoke(IPC_CHANNELS.AUTH_OAUTH2_GET_TOKEN, options)
+  },
+
+  // Vault
+  vault: {
+    encrypt: (plaintext: string): Promise<string> => invoke(IPC_CHANNELS.VAULT_ENCRYPT, plaintext),
+    decrypt: (ciphertext: string): Promise<string> => invoke(IPC_CHANNELS.VAULT_DECRYPT, ciphertext),
+    mask: (secret: string): Promise<string> => invoke(IPC_CHANNELS.VAULT_MASK, secret)
+  },
+
   // Window Controls
   window: {
     minimize: (): void => ipcRenderer.send(IPC_CHANNELS.WINDOW_MINIMIZE),

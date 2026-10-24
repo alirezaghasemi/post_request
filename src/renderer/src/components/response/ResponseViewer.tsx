@@ -9,7 +9,9 @@ import {
   Search,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Terminal,
+  CheckCheck
 } from 'lucide-react';
 import type { HttpResponseData } from '@shared/types';
 
@@ -20,7 +22,7 @@ interface ResponseViewerProps {
 }
 
 export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loading, onCancel }) => {
-  const [activeTab, setActiveTab] = useState<'body' | 'headers' | 'cookies'>('body');
+  const [activeTab, setActiveTab] = useState<'body' | 'headers' | 'cookies' | 'tests' | 'console'>('body');
   const [viewMode, setViewMode] = useState<'pretty' | 'raw'>('pretty');
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
@@ -110,11 +112,18 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loadin
   };
 
   const handleDownload = () => {
-    const blob = new Blob([response.body], { type: response.contentType });
+    const ext = response.contentType.includes('json')
+      ? 'json'
+      : response.contentType.includes('html')
+      ? 'html'
+      : response.contentType.includes('xml')
+      ? 'xml'
+      : 'txt';
+    const blob = new Blob([response.body], { type: response.contentType || 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `response-${Date.now()}.${response.contentType.includes('json') ? 'json' : 'txt'}`;
+    a.download = `response-${response.requestId}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -128,6 +137,10 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loadin
       formattedBody = response.body;
     }
   }
+
+  const tests = response.tests || [];
+  const logs = response.logs || [];
+  const passedTestsCount = tests.filter((t) => t.passed).length;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950/60 overflow-hidden text-xs select-none">
@@ -165,6 +178,43 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loadin
           >
             Cookies ({response.cookies.length})
           </button>
+          <button
+            onClick={() => setActiveTab('tests')}
+            className={`px-3 py-1 rounded font-medium flex items-center gap-1.5 transition-colors ${
+              activeTab === 'tests'
+                ? 'bg-slate-800 text-emerald-400 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>Test Results</span>
+            {tests.length > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                  passedTestsCount === tests.length
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : 'bg-rose-500/20 text-rose-400'
+                }`}
+              >
+                {passedTestsCount}/{tests.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('console')}
+            className={`px-3 py-1 rounded font-medium flex items-center gap-1 transition-colors ${
+              activeTab === 'console'
+                ? 'bg-slate-800 text-amber-400 font-semibold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Terminal size={12} />
+            <span>Console</span>
+            {logs.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-slate-800 text-slate-300">
+                {logs.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Metrics Badges */}
@@ -189,84 +239,90 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loadin
       {/* Response Tab: Body */}
       {activeTab === 'body' && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Controls Bar: Pretty/Raw, Search, Copy, Download */}
-          <div className="px-3 py-1.5 border-b border-slate-800/80 bg-slate-900/40 flex items-center justify-between">
+          {/* Sub Toolbar */}
+          <div className="h-8 px-3 border-b border-slate-800/80 bg-slate-900/50 flex items-center justify-between text-[11px]">
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded bg-slate-800 p-0.5 border border-slate-700/60">
-                <button
-                  onClick={() => setViewMode('pretty')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    viewMode === 'pretty' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Pretty
-                </button>
-                <button
-                  onClick={() => setViewMode('raw')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    viewMode === 'raw' ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Raw
-                </button>
-              </div>
-
-              {response.contentType && (
-                <span className="text-[10px] font-mono text-slate-500 truncate max-w-[150px]">
-                  {response.contentType}
-                </span>
-              )}
+              <button
+                type="button"
+                onClick={() => setViewMode('pretty')}
+                className={`px-2 py-0.5 rounded font-medium ${
+                  viewMode === 'pretty'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Pretty
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('raw')}
+                className={`px-2 py-0.5 rounded font-medium ${
+                  viewMode === 'raw'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Raw
+              </button>
+              <span className="text-slate-600">|</span>
+              <span className="text-slate-400 font-mono text-[10px]">{response.contentType}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center bg-slate-900 border border-slate-800 rounded px-2 py-0.5 text-xs text-slate-300">
-                <Search size={12} className="text-slate-500 mr-1.5" />
+              {/* Search in response */}
+              <div className="flex items-center bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-[11px] focus-within:border-slate-700">
+                <Search size={11} className="text-slate-500 mr-1" />
                 <input
                   type="text"
-                  placeholder="Filter response..."
+                  placeholder="Find in response..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-transparent outline-none text-[11px] w-28 text-slate-200 placeholder:text-slate-600"
+                  className="bg-transparent outline-none text-slate-200 w-28 placeholder:text-slate-600"
                 />
               </div>
 
               <button
+                type="button"
                 onClick={handleCopy}
-                title="Copy body to clipboard"
-                className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors text-[11px]"
+                title="Copy to clipboard"
+                className="flex items-center gap-1 px-2 py-0.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
               >
                 {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleDownload}
-                title="Save response to file"
-                className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                title="Download response"
+                className="flex items-center gap-1 px-2 py-0.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded transition-colors"
               >
-                <Download size={13} />
+                <Download size={12} />
+                <span>Save</span>
               </button>
             </div>
           </div>
 
-          {/* Truncated Warning Banner */}
           {response.isTruncated && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 text-xs">
-              <AlertTriangle size={14} />
-              <span>
-                Response exceeds 10MB memory threshold and was truncated to prevent freezing the interface.
-              </span>
+            <div className="px-3 py-1 bg-amber-500/10 border-b border-amber-500/20 text-amber-400 flex items-center gap-1.5 text-[11px]">
+              <AlertTriangle size={13} />
+              <span>Response exceeds 10MB memory safety threshold. Only the first 10MB are previewed here.</span>
             </div>
           )}
 
-          {/* Body Content */}
-          <div className="flex-1 p-3 overflow-auto font-mono text-xs text-slate-200 select-text leading-relaxed">
-            <pre className="whitespace-pre-wrap break-all">
+          {/* Body Viewer */}
+          <div className="flex-1 p-3 overflow-auto bg-slate-950/40 font-mono text-[11px] leading-relaxed select-text">
+            <pre className="text-slate-200 whitespace-pre-wrap break-all">
               {searchTerm
-                ? formattedBody
-                    .split('\n')
-                    .filter((line) => line.toLowerCase().includes(searchTerm.toLowerCase()))
-                    .join('\n')
+                ? formattedBody.split(new RegExp(`(${searchTerm})`, 'gi')).map((part, i) =>
+                    part.toLowerCase() === searchTerm.toLowerCase() ? (
+                      <span key={i} className="bg-amber-400 text-slate-950 font-bold px-0.5 rounded">
+                        {part}
+                      </span>
+                    ) : (
+                      part
+                    )
+                  )
                 : formattedBody}
             </pre>
           </div>
@@ -330,6 +386,123 @@ export const ResponseViewer: React.FC<ResponseViewerProps> = ({ response, loadin
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+
+      {/* Response Tab: Test Results */}
+      {activeTab === 'tests' && (
+        <div className="flex-1 p-4 overflow-y-auto">
+          {tests.length === 0 ? (
+            <div className="py-12 text-center text-slate-500">
+              <CheckCheck size={28} className="mx-auto text-slate-600 mb-2" />
+              <p className="font-medium text-slate-400">No Tests Executed</p>
+              <p className="text-[11px] text-slate-600 mt-1">
+                Add JavaScript test assertions in the &ldquo;Tests&rdquo; tab above to automatically validate API responses.
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-2xl space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <span className="font-semibold text-slate-300 text-xs">
+                  Test Results ({passedTestsCount}/{tests.length} passed)
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                    passedTestsCount === tests.length
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-rose-500/20 text-rose-400'
+                  }`}
+                >
+                  {Math.round((passedTestsCount / tests.length) * 100)}% Passing
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {tests.map((t, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg border text-xs ${
+                      t.passed
+                        ? 'bg-emerald-950/20 border-emerald-500/30'
+                        : 'bg-rose-950/20 border-rose-500/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {t.passed ? (
+                        <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                      ) : (
+                        <XCircle size={15} className="text-rose-400 shrink-0" />
+                      )}
+                      <span className={`font-medium ${t.passed ? 'text-slate-200' : 'text-rose-200'}`}>
+                        {t.name}
+                      </span>
+                      <span
+                        className={`ml-auto font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          t.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                        }`}
+                      >
+                        {t.passed ? 'PASS' : 'FAIL'}
+                      </span>
+                    </div>
+
+                    {!t.passed && t.error && (
+                      <div className="mt-2 p-2 bg-slate-950/80 rounded font-mono text-[11px] text-rose-300 border border-rose-500/20">
+                        {t.error}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Response Tab: Console Logs */}
+      {activeTab === 'console' && (
+        <div className="flex-1 p-3 overflow-y-auto font-mono text-xs select-text">
+          {logs.length === 0 ? (
+            <div className="py-12 text-center text-slate-500">
+              <Terminal size={24} className="mx-auto text-slate-600 mb-2" />
+              <p className="font-medium text-slate-400">Execution Console Empty</p>
+              <p className="text-[11px] text-slate-600 mt-1">
+                Messages logged via <code className="text-blue-400">console.log()</code> in scripts will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {logs.map((log, idx) => (
+                <div
+                  key={idx}
+                  className={`p-1.5 rounded flex items-start gap-2 text-[11px] hover:bg-slate-900/60 ${
+                    log.level === 'error'
+                      ? 'text-rose-300 bg-rose-950/20'
+                      : log.level === 'warn'
+                      ? 'text-amber-300 bg-amber-950/20'
+                      : 'text-slate-300'
+                  }`}
+                >
+                  <span className="text-slate-600 shrink-0">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span
+                    className={`px-1 rounded text-[9px] font-bold uppercase shrink-0 ${
+                      log.level === 'error'
+                        ? 'bg-rose-500/20 text-rose-400'
+                        : log.level === 'warn'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : log.level === 'info'
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {log.level}
+                  </span>
+                  <span className="whitespace-pre-wrap break-all">{log.message}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

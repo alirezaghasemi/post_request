@@ -20,6 +20,8 @@ export interface TabItem {
   url?: string;
   isDirty?: boolean;
   requestId?: string;
+  preScript?: string;
+  testScript?: string;
 }
 
 interface AppState {
@@ -61,7 +63,7 @@ interface AppState {
   createWorkspace: (name: string, description?: string) => Promise<void>;
   createCollection: (name: string, description?: string) => Promise<void>;
   createFolder: (collectionId: string, name: string, parentFolderId?: string) => Promise<void>;
-  createRequest: (data: { name: string; method: string; url: string; collectionId?: string; folderId?: string }) => Promise<void>;
+  createRequest: (data: Partial<RequestItem> & { name: string; method: string; url: string; collectionId?: string; folderId?: string }) => Promise<void>;
   setActiveEnvironment: (id: string | null) => Promise<void>;
   createEnvironment: (name: string) => Promise<void>;
   updateEnvironment: (id: string, data: Partial<Pick<Environment, 'name' | 'variables' | 'isActive'>>) => Promise<void>;

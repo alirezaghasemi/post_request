@@ -54,6 +54,18 @@ export const IPC_CHANNELS = {
   HISTORY_LIST: 'history:list',
   HISTORY_CLEAR: 'history:clear',
 
+  // Scripting
+  SCRIPT_RUN: 'script:run',
+
+  // Advanced Auth
+  AUTH_OAUTH2_GENERATE_PKCE: 'auth:oauth2:generate-pkce',
+  AUTH_OAUTH2_GET_TOKEN: 'auth:oauth2:get-token',
+
+  // Vault
+  VAULT_ENCRYPT: 'vault:encrypt',
+  VAULT_DECRYPT: 'vault:decrypt',
+  VAULT_MASK: 'vault:mask',
+
   // Window Controls
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

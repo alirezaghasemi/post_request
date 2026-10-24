@@ -7,6 +7,10 @@ import { HttpClientEngine } from '../network/http-client';
 import { VariableResolver } from '../variables/resolver';
 import { PostmanImporter } from '../importers/postman-importer';
 import { PostmanExporter } from '../exporters/postman-exporter';
+import { ScriptSandbox } from '../scripting/sandbox';
+import { OAuth2Engine } from '../auth/oauth2';
+import { VaultManager } from '../vault/vault-manager';
+import type { ScriptLog, ScriptTestResult } from '../../shared/types';
 
 export function registerIpcHandlers(
   dbManager: DatabaseManager,
@@ -16,6 +20,9 @@ export function registerIpcHandlers(
   const variableResolver = new VariableResolver();
   const postmanImporter = new PostmanImporter();
   const postmanExporter = new PostmanExporter();
+  const scriptSandbox = new ScriptSandbox();
+  const oauth2Engine = new OAuth2Engine();
+  const vaultManager = new VaultManager({ storagePath: app.getPath('userData') });
   // Helper to wrap handlers in try/catch and payload validation
   function handle<TPayload, TResult>(
     channel: string,
@@ -188,34 +195,108 @@ export function registerIpcHandlers(
     return dbManager.createRequest(data);
   });
 
-  // HTTP Execution Engine with Variable Resolution
+  // HTTP Execution Engine with Pre-request Scripts, Variable Resolution, and Post-response Tests
   handle(IPC_CHANNELS.HTTP_EXECUTE, async (payload: any) => {
-    // 1. Resolve variables in payload using active environment and collection variables
-    let effectivePayload = payload;
-    if (payload.workspaceId) {
-      const environments = dbManager.getEnvironments(payload.workspaceId);
-      const activeEnv = environments.find((e) => e.isActive);
+    const allLogs: ScriptLog[] = [];
+    const allTests: ScriptTestResult[] = [];
 
-      let collectionVars: any[] = [];
-      if (payload.collectionId) {
-        const col = dbManager.getCollection(payload.collectionId);
-        if (col?.variables) {
-          try {
-            collectionVars = JSON.parse(col.variables);
-          } catch {
-            // Ignored
-          }
+    let environments = payload.workspaceId ? dbManager.getEnvironments(payload.workspaceId) : [];
+    let activeEnv = environments.find((e) => e.isActive);
+
+    // 1. Run Pre-request Script in Isolated Sandbox
+    if (payload.preScript && typeof payload.preScript === 'string' && payload.preScript.trim().length > 0) {
+      try {
+        const preResult = await scriptSandbox.execute(payload.preScript, {
+          environment: activeEnv?.variables || [],
+          timeoutMs: payload.timeoutMs || 3000
+        });
+        allLogs.push(...preResult.logs);
+        if (preResult.error) {
+          allLogs.push({
+            level: 'error',
+            message: `Pre-request Script Error: ${preResult.error}`,
+            timestamp: new Date().toISOString()
+          });
         }
+        if (preResult.updatedEnvironment && activeEnv) {
+          activeEnv = dbManager.updateEnvironment(activeEnv.id, { variables: preResult.updatedEnvironment });
+        }
+      } catch (err: any) {
+        allLogs.push({
+          level: 'error',
+          message: `Pre-request execution failed: ${err.message}`,
+          timestamp: new Date().toISOString()
+        });
       }
-
-      effectivePayload = variableResolver.resolvePayload(payload, {
-        environment: activeEnv?.variables || [],
-        collection: collectionVars,
-        request: payload.localVariables || []
-      });
     }
 
+    // 2. Resolve variables in payload using active environment and collection variables
+    let effectivePayload = payload;
+    let collectionVars: any[] = [];
+    if (payload.collectionId) {
+      const col = dbManager.getCollection(payload.collectionId);
+      if (col?.variables) {
+        try {
+          collectionVars = JSON.parse(col.variables);
+        } catch {
+          // Ignored
+        }
+      }
+    }
+
+    effectivePayload = variableResolver.resolvePayload(payload, {
+      environment: activeEnv?.variables || [],
+      collection: collectionVars,
+      request: payload.localVariables || []
+    });
+
+    // 3. Execute HTTP Network Request
     const response = await httpClient.execute(effectivePayload);
+
+    // 4. Run Post-response Test Script in Isolated Sandbox
+    if (payload.testScript && typeof payload.testScript === 'string' && payload.testScript.trim().length > 0) {
+      try {
+        const headersMap: Record<string, string> = {};
+        for (const [k, v] of Object.entries(response.headers)) {
+          headersMap[k] = Array.isArray(v) ? v.join(', ') : String(v);
+        }
+
+        const testResult = await scriptSandbox.execute(payload.testScript, {
+          environment: activeEnv?.variables || [],
+          response: {
+            status: response.status,
+            statusText: response.statusText,
+            headers: headersMap,
+            bodyText: response.body,
+            timeMs: response.timeMs,
+            sizeBytes: response.sizeBytes
+          },
+          timeoutMs: payload.timeoutMs || 3000
+        });
+
+        allLogs.push(...testResult.logs);
+        allTests.push(...testResult.tests);
+        if (testResult.error) {
+          allLogs.push({
+            level: 'error',
+            message: `Test Script Error: ${testResult.error}`,
+            timestamp: new Date().toISOString()
+          });
+        }
+        if (testResult.updatedEnvironment && activeEnv) {
+          dbManager.updateEnvironment(activeEnv.id, { variables: testResult.updatedEnvironment });
+        }
+      } catch (err: any) {
+        allLogs.push({
+          level: 'error',
+          message: `Test script execution failed: ${err.message}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+
+    response.tests = allTests;
+    response.logs = allLogs;
 
     // Record in history
     if (payload.workspaceId) {
@@ -237,6 +318,33 @@ export function registerIpcHandlers(
 
   handle(IPC_CHANNELS.HTTP_CANCEL, (requestId: string) => {
     return httpClient.cancel(requestId);
+  });
+
+  // Script Testing On-Demand
+  handle(IPC_CHANNELS.SCRIPT_RUN, async ({ script, context }: { script: string; context: any }) => {
+    return scriptSandbox.execute(script, context || {});
+  });
+
+  // Advanced Auth (OAuth 2.0)
+  handle(IPC_CHANNELS.AUTH_OAUTH2_GENERATE_PKCE, () => {
+    return oauth2Engine.generatePKCE();
+  });
+
+  handle(IPC_CHANNELS.AUTH_OAUTH2_GET_TOKEN, async (options: any) => {
+    return oauth2Engine.requestClientCredentialsToken(options);
+  });
+
+  // Vault Encryption
+  handle(IPC_CHANNELS.VAULT_ENCRYPT, (plaintext: string) => {
+    return vaultManager.encrypt(plaintext);
+  });
+
+  handle(IPC_CHANNELS.VAULT_DECRYPT, (ciphertext: string) => {
+    return vaultManager.decrypt(ciphertext);
+  });
+
+  handle(IPC_CHANNELS.VAULT_MASK, (secret: string) => {
+    return vaultManager.mask(secret);
   });
 
   // History

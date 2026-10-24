@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import { URL } from 'node:url';
+import { DigestAuthHandler } from '../auth/digest';
 import type {
   HttpRequestExecutionPayload,
   HttpResponseData,
@@ -65,6 +66,24 @@ export class HttpClientEngine {
         } else {
           headers[payload.auth.apiKeyName] = payload.auth.apiKeyValue;
         }
+      } else if (payload.auth.type === 'oauth2' && payload.auth.oauth2?.accessToken) {
+        if (payload.auth.oauth2.addTokenTo === 'query') {
+          targetUrl.searchParams.append('access_token', payload.auth.oauth2.accessToken);
+        } else {
+          headers['Authorization'] = `${payload.auth.oauth2.tokenType || 'Bearer'} ${payload.auth.oauth2.accessToken}`;
+        }
+      } else if (payload.auth.type === 'digest' && payload.auth.digest?.username && payload.auth.digest?.password) {
+        const digestHandler = new DigestAuthHandler();
+        const digestHeader = digestHandler.generateDigestHeader({
+          username: payload.auth.digest.username,
+          password: payload.auth.digest.password,
+          method: (payload.method || 'GET').toUpperCase(),
+          uri: `${targetUrl.pathname}${targetUrl.search}`,
+          challengeHeader: payload.auth.digest.nonce
+            ? `Digest realm="${payload.auth.digest.realm || ''}", nonce="${payload.auth.digest.nonce}", qop="${payload.auth.digest.qop || 'auth'}", algorithm="${payload.auth.digest.algorithm || 'MD5'}"`
+            : ''
+        });
+        headers['Authorization'] = digestHeader;
       }
     }
 

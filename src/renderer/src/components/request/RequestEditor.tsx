@@ -11,6 +11,7 @@ import type {
 import { KeyValueTable } from './KeyValueTable';
 import { BodyEditor } from './BodyEditor';
 import { AuthEditor } from './AuthEditor';
+import { ScriptEditor } from './ScriptEditor';
 import { ResponseViewer } from '../response/ResponseViewer';
 
 interface RequestEditorProps {
@@ -30,6 +31,8 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
 
   const [method, setMethod] = useState<string>(tab.method || 'GET');
   const [url, setUrl] = useState<string>(tab.url || 'https://jsonplaceholder.typicode.com/todos/1');
+  const [preScript, setPreScript] = useState<string>(tab.preScript || '');
+  const [testScript, setTestScript] = useState<string>(tab.testScript || '');
 
   // Compute live resolved URL for display
   const activeEnv = environments.find((e) => e.id === activeEnvironmentId);
@@ -47,7 +50,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
   }, [url, activeEnv]);
 
   // Request Config State
-  const [activeConfigTab, setActiveConfigTab] = useState<'params' | 'headers' | 'auth' | 'body'>('params');
+  const [activeConfigTab, setActiveConfigTab] = useState<'params' | 'headers' | 'auth' | 'body' | 'pre-request' | 'tests'>('params');
 
   const [params, setParams] = useState<KeyValuePair[]>([
     { id: 'p1', key: '', value: '', enabled: true, description: '' }
@@ -120,7 +123,10 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
       params,
       headers,
       body,
-      auth
+      auth,
+      preScript,
+      testScript,
+      workspaceId: activeEnv?.workspaceId
     };
 
     try {
@@ -139,7 +145,13 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
       await createRequest({
         name: tab.title || 'Saved Request',
         method,
-        url
+        url,
+        headers: JSON.stringify(headers),
+        params: JSON.stringify(params),
+        body: JSON.stringify(body),
+        authConfig: JSON.stringify(auth),
+        preScript,
+        testScript
       });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
@@ -244,7 +256,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
         {/* Top: Request Config Tabs */}
         <div className="h-64 flex flex-col border-b border-slate-800 bg-slate-900/40">
           <div className="flex items-center px-3 border-b border-slate-800 bg-slate-900/70 select-none">
-            {(['params', 'headers', 'auth', 'body'] as const).map((tabKey) => (
+            {(['params', 'headers', 'auth', 'body', 'pre-request', 'tests'] as const).map((tabKey) => (
               <button
                 key={tabKey}
                 onClick={() => setActiveConfigTab(tabKey)}
@@ -258,6 +270,10 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
                   ? `Params (${params.filter((p) => p.key).length})`
                   : tabKey === 'headers'
                   ? `Headers (${headers.filter((h) => h.key).length})`
+                  : tabKey === 'pre-request'
+                  ? `Pre-request ${preScript.trim() ? '•' : ''}`
+                  : tabKey === 'tests'
+                  ? `Tests ${testScript.trim() ? '•' : ''}`
                   : tabKey}
               </button>
             ))}
@@ -282,6 +298,12 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ tab }) => {
             )}
             {activeConfigTab === 'auth' && <AuthEditor auth={auth} onChange={setAuth} />}
             {activeConfigTab === 'body' && <BodyEditor config={body} onChange={setBody} />}
+            {activeConfigTab === 'pre-request' && (
+              <ScriptEditor value={preScript} onChange={setPreScript} type="pre-request" />
+            )}
+            {activeConfigTab === 'tests' && (
+              <ScriptEditor value={testScript} onChange={setTestScript} type="tests" />
+            )}
           </div>
         </div>
 
