@@ -6,11 +6,11 @@ console.log('[SmokeTest] Launching Electron in production mode...');
 const electronPath = path.resolve(__dirname, '../node_modules/.bin/electron');
 const appPath = path.resolve(__dirname, '..');
 
+const childEnv = { ...process.env, NODE_ENV: 'production' };
+delete childEnv.ELECTRON_RUN_AS_NODE;
+
 const child = spawn(electronPath, [appPath, '--no-sandbox'], {
-  env: {
-    ...process.env,
-    NODE_ENV: 'production'
-  },
+  env: childEnv,
   stdio: ['ignore', 'pipe', 'pipe']
 });
 
@@ -25,7 +25,7 @@ child.stdout.on('data', (chunk) => {
     console.log('[SmokeTest] SUCCESS: DevPilot launched and initialized SQLite successfully!');
     setTimeout(() => {
       child.kill('SIGINT');
-    }, 1000);
+    }, 200);
   }
 });
 
