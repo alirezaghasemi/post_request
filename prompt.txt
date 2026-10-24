@@ -1,0 +1,1453 @@
+# Project: Build a Full-Featured Postman-Like API Development Platform Using Electron
+
+## 1. Your Role
+
+Act as a Principal Software Architect, Senior Electron Engineer, API Platform Engineer, Security Engineer, and QA Automation Lead.
+
+Your mission is to design and build a production-grade desktop application that provides functional capabilities comparable to Postman.
+
+This is a real software engineering project, not a UI mockup, prototype, or static dashboard.
+
+The application must have working features, real protocol implementations, persistent storage, automated tests, import/export capabilities, and a maintainable architecture.
+
+Do not attempt to implement everything in one uncontrolled coding pass.
+
+**Mandatory rule: Work in explicit phases. Present the plan for each phase and wait for my approval before starting that phase.**
+
+Do not proceed to the next phase without my explicit approval.
+
+My approval of a phase means that you may implement that phase only. It does not authorize you to start subsequent phases automatically.
+
+---
+
+## 2. Core Objective
+
+Build an independent desktop application inspired by the functional capabilities of Postman.
+
+The application must:
+
+- Run on Linux, Windows, and macOS.
+- Be built with Electron.
+- Work offline for all local features that do not inherently require external services.
+- Provide a professional, developer-focused user interface.
+- Support HTTP API development, request execution, response inspection, automated testing, scripting, collections, environments, API specifications, mocking, and automation.
+- Be modular and extensible so new protocols and features can be added without rewriting the core.
+- Prefer local-first storage and privacy.
+- Avoid mandatory user registration or cloud accounts for core functionality.
+- Import and export supported Postman-compatible data formats wherever technically possible.
+- Provide transparent capability labels for fully implemented, partially implemented, externally dependent, and unavailable features.
+
+Do not claim complete Postman compatibility unless it has been verified through actual feature-level testing.
+
+Do not copy Postman's proprietary source code, branding, logos, or protected assets. Create an original product identity and interface.
+
+Working title: **DevPilot API Studio**.
+
+The product name must be configurable.
+
+---
+
+## 3. Mandatory Engineering Principles
+
+Follow these principles throughout the project:
+
+1. Build actual functionality, not placeholder buttons.
+2. Never simulate successful API responses when a real request is expected.
+3. Never silently ignore unsupported protocols or authentication methods.
+4. Never return fake success messages for unfinished operations.
+5. Never mark a feature complete without implementing and testing its acceptance criteria.
+6. Avoid giant components, monolithic services, and unnecessary abstractions.
+7. Separate the Electron main process, preload layer, renderer, protocol engines, persistence, scripting engine, and automation engine.
+8. Use strict TypeScript.
+9. Use dependency injection where it improves testability and modularity.
+10. Define interfaces for protocol adapters, persistence, authentication providers, importers, exporters, and automation runners.
+11. Use structured errors and consistent logging.
+12. Write unit tests, integration tests, and end-to-end tests.
+13. Document architectural decisions.
+14. Keep dependencies maintained and compatible with the selected Electron version.
+15. Never downgrade security settings merely to make a feature work.
+16. Do not add unnecessary external services or subscriptions.
+17. Do not introduce a backend server unless a feature genuinely requires one.
+18. Do not use Docker as a mandatory dependency for the desktop application.
+19. Do not overwrite existing project files without inspecting them first.
+20. Do not delete working features to simplify implementation.
+
+When a requirement is ambiguous, identify the ambiguity and propose a concrete solution before implementation.
+
+When a feature is technically infeasible or depends on a proprietary service, explain the limitation and propose a practical alternative.
+
+---
+
+## 4. Required Technology Stack
+
+Use the following stack unless a documented technical incompatibility requires an alternative.
+
+### Desktop application
+
+- Electron.
+- TypeScript.
+- React.
+- Vite.
+- A maintained, accessible component library.
+- Tailwind CSS or an equivalent consistent styling system.
+- Zustand or another lightweight state-management solution.
+- React Router where routing is necessary.
+
+### Editor components
+
+Use suitable, maintained editor components for:
+
+- JSON editing and formatting.
+- JavaScript scripting.
+- Request body editing.
+- Response inspection.
+- XML editing.
+- YAML editing.
+- API specification editing.
+
+Monaco Editor is preferred for advanced code editing, provided its bundle size and performance are handled properly.
+
+Use a tree viewer for large JSON responses and a syntax-highlighted text viewer for ordinary responses.
+
+### Local persistence
+
+Use SQLite with a maintained Node.js-compatible driver.
+
+Use migrations and a versioned database schema.
+
+Persist:
+
+- Collections.
+- Folders.
+- Requests.
+- Environments.
+- Variables.
+- History metadata.
+- Request and response examples.
+- API specifications.
+- Test scripts.
+- Mock configurations.
+- Application preferences.
+- Workspace metadata.
+
+Do not persist large response bodies or uploaded files indefinitely without configurable retention policies.
+
+### Networking
+
+Use dedicated, well-tested protocol adapters.
+
+For HTTP and HTTPS, select an HTTP transport that supports:
+
+- Request cancellation.
+- Streaming responses.
+- Redirect control.
+- Timeouts.
+- Proxy configuration.
+- Cookies.
+- TLS configuration.
+- Multipart uploads.
+- Binary bodies.
+- Response streaming.
+- Large responses.
+- Compression.
+- Connection reuse where appropriate.
+
+Do not assume browser Fetch provides every capability required by a professional API client.
+
+Document limitations involving HTTP versions, HTTP/2, HTTP/3, client certificates, proxy protocols, and streaming.
+
+### Testing
+
+Use:
+
+- Vitest for unit and integration tests.
+- Playwright or an appropriate Electron-compatible end-to-end testing solution.
+- Dedicated protocol integration tests.
+- Security tests.
+- Import/export compatibility tests.
+
+### Code quality
+
+Configure:
+
+- ESLint.
+- Prettier.
+- TypeScript strict mode.
+- Dependency auditing.
+- Automated test commands.
+- Build verification.
+- CI workflows.
+
+Pin and lock dependencies.
+
+Do not choose dependencies solely because they appear in a tutorial. Verify their current maintenance status and licensing.
+
+---
+
+## 5. Application Architecture
+
+Design the application around independently testable modules.
+
+Use the following logical architecture:
+
+### A. Electron Main Process
+
+Responsible for:
+
+- Application lifecycle.
+- Window management.
+- File dialogs.
+- Native filesystem access.
+- Secure persistence.
+- Native notifications.
+- IPC routing.
+- Application updates, when configured.
+- Process management.
+- Restricted access to operating-system functionality.
+
+### B. Preload Layer
+
+Expose only explicitly authorized capabilities through contextBridge.
+
+Every IPC handler must validate:
+
+- The sender.
+- Input types.
+- Payload size.
+- File paths.
+- Permissions.
+- The requested operation.
+
+Do not expose raw Node.js APIs to the renderer.
+
+### C. Renderer
+
+Responsible for:
+
+- User interface.
+- Editors.
+- Request builder.
+- Collection explorer.
+- Response viewer.
+- Test results.
+- Environment selection.
+- Workspace management.
+- Settings.
+- Documentation.
+- Visual workflow editor.
+
+The renderer must not directly access the database or unrestricted filesystem.
+
+### D. Core Domain Layer
+
+Define domain models and interfaces for:
+
+- Requests.
+- Responses.
+- Collections.
+- Folders.
+- Variables.
+- Environments.
+- Authentication.
+- Protocols.
+- Test cases.
+- Execution results.
+- API specifications.
+- Mock examples.
+- Workflows.
+
+Keep domain logic independent from React components.
+
+### E. Protocol Engine
+
+Provide separate adapters for each supported protocol.
+
+Each adapter must declare:
+
+- Supported features.
+- Authentication support.
+- Streaming support.
+- Cancellation behavior.
+- Connection lifecycle.
+- Known limitations.
+- Test coverage.
+
+### F. Script Engine
+
+Run user scripts in a restricted execution environment.
+
+Separate pre-request scripts, post-response scripts, and assertions.
+
+Do not execute arbitrary user scripts in the Electron main process.
+
+### G. Persistence Layer
+
+Provide repositories, migrations, transaction handling, backup, restore, and import/export services.
+
+### H. Automation Engine
+
+Provide Collection execution, data-driven tests, workflow execution, scheduled tasks where supported, and command-line integration.
+
+Produce a Mermaid architecture diagram and document the data flow before implementation.
+
+---
+
+## 6. Feature Catalog
+
+Implement the following capabilities in phases.
+
+Every feature must have a corresponding implementation, test coverage, and documentation.
+
+### 6.1 HTTP API Client
+
+Support:
+
+- GET.
+- POST.
+- PUT.
+- PATCH.
+- DELETE.
+- HEAD.
+- OPTIONS.
+- Custom HTTP methods.
+- Query parameters.
+- Path variables.
+- Headers.
+- Cookies.
+- Raw request bodies.
+- JSON.
+- XML.
+- URL-encoded form data.
+- Multipart form data.
+- Binary request bodies.
+- File uploads.
+- Custom content types.
+- Redirect handling.
+- Configurable timeouts.
+- Request cancellation.
+- Proxy settings.
+- TLS and client certificate configuration.
+- Request and response size limits.
+- Request history.
+- Request duplication.
+- Save and update requests.
+- Resend requests.
+- Request previews.
+
+Provide a professional request builder with editable key/value tables.
+
+Preserve duplicate HTTP headers and query parameters where valid.
+
+Support empty values and distinguish missing values from empty strings.
+
+Do not silently normalize away meaningful request data.
+
+### 6.2 Response Inspection
+
+Display:
+
+- HTTP status.
+- Status text where available.
+- Response time.
+- Response size.
+- Response headers.
+- Cookies.
+- Response body.
+- Pretty JSON.
+- Raw text.
+- XML.
+- HTML as safely displayed text by default.
+- Binary response information.
+- Image previews with size limits.
+- Syntax highlighting.
+- Search within response bodies.
+- Copy response.
+- Save response to a file.
+- Download binary responses.
+- Response size limits.
+- Truncated response indicators.
+- Request and response metadata.
+
+Large responses must not freeze the renderer.
+
+Do not automatically execute returned HTML, JavaScript, or other untrusted content.
+
+### 6.3 Authentication
+
+Implement suitable support for:
+
+- No Auth.
+- Basic Auth.
+- Bearer Token.
+- API Key.
+- Digest Auth.
+- OAuth 1.0 where applicable.
+- OAuth 2.0.
+- Client certificate authentication.
+- AWS Signature authentication where feasible.
+- Custom authentication plugins.
+
+OAuth 2.0 must clearly distinguish authorization-code, PKCE, client-credentials, and other applicable flows.
+
+Do not implement insecure password or token handling.
+
+Secrets must never appear in ordinary logs.
+
+### 6.4 Variables and Environments
+
+Implement:
+
+- Global variables.
+- Collection variables.
+- Environment variables.
+- Request-local variables.
+- Iteration data variables.
+- Local execution variables.
+- Secret variables.
+- Variable scopes and precedence.
+- Variable interpolation.
+- Environment switching.
+- Variable editing.
+- Import and export.
+- Sensitive-value masking.
+- Unresolved-variable detection.
+- Variable resolution previews.
+
+Support syntax such as:
+
+{{base_url}}
+
+{{access_token}}
+
+{{product_id}}
+
+Provide a secure local secret vault using an appropriate operating-system credential store where possible.
+
+Document fallback behavior when a native credential store is unavailable.
+
+Do not store sensitive values in plaintext unless the user explicitly chooses an appropriately documented fallback.
+
+### 6.5 Collections and Workspaces
+
+Implement:
+
+- Multiple workspaces.
+- Collections.
+- Nested folders.
+- Saved requests.
+- Request descriptions.
+- Collection-level authentication.
+- Folder-level authentication.
+- Request-level overrides.
+- Collection variables.
+- Collection-level scripts.
+- Folder-level scripts where supported.
+- Request ordering.
+- Drag-and-drop organization.
+- Duplicate requests and folders.
+- Rename and delete.
+- Bulk operations.
+- Search and filtering.
+- Favorites.
+- Tags.
+- Local history.
+- Request execution history.
+- Export and import.
+
+Create a clear hierarchy:
+
+Workspace → Collection → Folder → Request.
+
+Do not lose request settings when moving or duplicating items.
+
+### 6.6 Automated Testing
+
+Implement a JavaScript-based testing API with familiar assertions.
+
+Provide:
+
+- Pre-request scripts.
+- Post-response scripts.
+- Assertions.
+- Status-code checks.
+- Response-header checks.
+- JSON assertions.
+- Schema validation.
+- Response-time assertions.
+- Variable updates.
+- Request chaining.
+- Test result reporting.
+- Assertion failure details.
+- Collection Runner.
+- Iteration data.
+- CSV and JSON test data.
+- Retry policies where appropriate.
+- Test isolation.
+- Execution cancellation.
+- Test reports.
+
+Support a documented subset of Postman-compatible script APIs.
+
+Create a compatibility matrix.
+
+Implement commonly used APIs such as:
+
+- pm.test.
+- pm.expect.
+- pm.response.
+- pm.request.
+- pm.environment.
+- pm.collectionVariables.
+- pm.variables.
+- pm.iterationData.
+- pm.execution where applicable.
+
+Implement equivalent behavior only where it can be tested.
+
+Do not pretend that the entire Postman sandbox API is compatible unless every advertised API has been verified.
+
+### 6.7 Secure JavaScript Execution
+
+This is a critical security requirement.
+
+Scripts must run in an isolated environment separate from Electron's privileged main process.
+
+Implement:
+
+- Execution time limits.
+- Memory limits where technically enforceable.
+- Cancellation.
+- Restricted filesystem access.
+- Restricted process access.
+- Restricted network access.
+- Safe variable passing.
+- Structured communication between the script runtime and application.
+- Script output capture.
+- Error and stack-trace reporting.
+- Prevention of arbitrary operating-system command execution.
+
+Never expose unrestricted Node.js access to collection scripts.
+
+Do not run untrusted scripts with unrestricted vm execution and assume that a simple timeout makes them safe.
+
+Evaluate a dedicated isolated worker, sandboxed process, or other defensible runtime architecture.
+
+If exact compatibility requires capabilities that cannot be safely implemented, document the limitation.
+
+### 6.8 Collection Runner
+
+Implement:
+
+- Sequential execution.
+- Configurable iterations.
+- Data-driven execution.
+- Request dependency handling.
+- Execution progress.
+- Cancellation.
+- Per-request results.
+- Per-assertion results.
+- Failure summaries.
+- Exportable reports.
+- Variable scope isolation.
+- Controlled cleanup hooks.
+- Request execution logs.
+
+Provide deterministic test execution wherever possible.
+
+### 6.9 API Specification and OpenAPI
+
+Implement:
+
+- OpenAPI 3.x import.
+- Supported OpenAPI version detection.
+- Specification validation.
+- Endpoint browsing.
+- Request generation from operations.
+- Authentication configuration.
+- Parameter generation.
+- Schema-aware request bodies.
+- Example responses.
+- Specification editing.
+- YAML and JSON support.
+- Export.
+- Specification-to-collection conversion.
+- Collection-to-specification conversion where supported.
+- Compatibility warnings.
+- Reference resolution.
+- Multi-file specifications where feasible.
+
+Never silently discard unsupported specification constructs.
+
+Provide import reports that list warnings and errors.
+
+### 6.10 API Documentation
+
+Generate readable documentation from collections.
+
+Include:
+
+- Endpoints.
+- Methods.
+- Descriptions.
+- Parameters.
+- Headers.
+- Authentication.
+- Request examples.
+- Response examples.
+- Error responses.
+- Schema information.
+- Code examples where supported.
+
+Allow export to HTML and Markdown.
+
+Document which aspects are generated and which must be authored manually.
+
+### 6.11 Mock Server
+
+Implement a local mock server with:
+
+- Routes.
+- Methods.
+- Example responses.
+- Header matching.
+- Query matching.
+- Configurable status codes.
+- Delay simulation.
+- Error simulation.
+- Dynamic response templates.
+- Request logging.
+- Start and stop controls.
+- Port configuration.
+- Conflict detection.
+- Access restrictions.
+
+A mock server must return real responses from a running local HTTP server.
+
+Do not confuse mock responses with responses from the actual API.
+
+Support remote mock servers only if a separately configured backend service is implemented.
+
+### 6.12 GraphQL
+
+Implement:
+
+- GraphQL endpoint configuration.
+- Query editor.
+- Mutation editor.
+- Variables.
+- Headers.
+- Authentication.
+- Schema introspection where permitted.
+- Query history.
+- Response formatting.
+- Error inspection.
+- Collection integration.
+
+### 6.13 WebSocket and Socket.IO
+
+Implement dedicated clients.
+
+WebSocket:
+
+- Connect and disconnect.
+- Text messages.
+- Binary messages where appropriate.
+- Message history.
+- Ping/pong visibility where applicable.
+- Connection status.
+- Headers and authentication.
+- Reconnection settings.
+- Message filtering.
+- Exportable logs.
+
+Socket.IO:
+
+- Event emission.
+- Event listening.
+- Namespace configuration.
+- Connection options.
+- Acknowledgements where applicable.
+- Connection lifecycle.
+- Event history.
+
+Do not assume that Socket.IO and standard WebSocket are interchangeable.
+
+### 6.14 gRPC
+
+Implement:
+
+- Server connection configuration.
+- TLS and authentication settings.
+- Proto file import.
+- Reflection where available.
+- Service and method discovery.
+- Unary calls.
+- Server-streaming calls.
+- Client-streaming calls.
+- Bidirectional streaming where technically supported.
+- Message editing.
+- Metadata.
+- Response inspection.
+- Error reporting.
+
+If the selected gRPC runtime does not support a feature, state that limitation explicitly.
+
+### 6.15 MQTT
+
+Implement:
+
+- Broker configuration.
+- TCP and TLS connections.
+- MQTT-compatible WebSocket connections where supported.
+- Publish.
+- Subscribe.
+- Unsubscribe.
+- Topics.
+- QoS.
+- Retained messages.
+- Client credentials.
+- Connection lifecycle.
+- Message history.
+- Payload formatting.
+
+Implement protocol-specific behavior rather than disguising MQTT messages as HTTP requests.
+
+### 6.16 Additional Protocols
+
+Evaluate and implement where technically feasible:
+
+- SOAP.
+- Server-Sent Events.
+- MCP client.
+- Webhook testing and signed delivery.
+- AI model API requests.
+
+For AI model requests, provide configurable providers and endpoints instead of requiring one proprietary provider.
+
+For MCP, support documented protocol versions, initialization, capability discovery, and permitted tool interactions.
+
+For signed webhooks, implement explicitly configured signature algorithms and verify them against independent test vectors.
+
+Maintain a protocol capability registry so unsupported operations are never advertised as available.
+
+### 6.17 Request Code Generation
+
+Generate example code for common request types using maintained libraries where possible.
+
+Potential languages:
+
+- JavaScript.
+- TypeScript.
+- PHP.
+- Go.
+- Python.
+- cURL.
+- Java.
+
+Generated code must preserve the meaningful request properties.
+
+Warn when a particular language or library cannot represent an option.
+
+Provide copy-to-clipboard functionality.
+
+### 6.18 Traffic Inspection
+
+Evaluate a controlled local proxy and browser traffic capture.
+
+Requirements:
+
+- Explicit user consent.
+- Certificate management for HTTPS inspection.
+- Clear warnings about sensitive data.
+- Selective host filtering.
+- Request and response capture.
+- Redaction.
+- Capture limits.
+- Start and stop controls.
+- Secure certificate installation instructions.
+- No silent system-wide interception.
+
+Never bypass certificate validation globally.
+
+### 6.19 Automation and CLI
+
+Provide a command-line interface for:
+
+- Running collections.
+- Selecting environments.
+- Supplying iteration data.
+- Setting variables.
+- Generating reports.
+- Returning nonzero exit codes on failures.
+- Running headlessly.
+- Integrating with Jenkins and other CI systems.
+
+Support CI execution without requiring the graphical interface.
+
+Provide machine-readable JSON reports and human-readable summaries.
+
+Add a scheduler for local periodic checks if appropriate.
+
+### 6.20 Performance Testing
+
+Evaluate controlled load testing with:
+
+- Configurable concurrency.
+- Request rate limits.
+- Duration.
+- Warm-up.
+- Cancellation.
+- Latency distributions.
+- Percentile reporting.
+- Error rates.
+- Resource usage.
+- Exportable reports.
+
+Clearly separate functional tests from load tests.
+
+Avoid overwhelming a target API accidentally.
+
+Require explicit confirmation for potentially destructive or high-volume tests.
+
+### 6.21 AI Assistance
+
+Design an optional AI provider interface.
+
+Potential capabilities:
+
+- Generate requests from natural language.
+- Generate test scripts.
+- Explain API errors.
+- Suggest assertions.
+- Generate documentation.
+- Help with OpenAPI definitions.
+- Explain response schemas.
+- Assist with request debugging.
+
+AI must be optional.
+
+The application must function without an AI key.
+
+Before sending request data, secrets, or responses to an external provider, show the user what data will be transmitted and obtain appropriate consent.
+
+Never automatically transmit stored secrets or full sensitive responses.
+
+### 6.22 Collaboration and Version Control
+
+Implement local-first collaboration foundations:
+
+- Workspace export.
+- Git-compatible file formats.
+- Change history.
+- Diff viewing.
+- Conflict detection.
+- Import and merge.
+- Backup and restore.
+
+Treat cloud collaboration as a separate optional subsystem.
+
+Do not claim real-time team collaboration unless synchronization, authentication, authorization, conflict handling, and a server-side collaboration service are actually implemented.
+
+### 6.23 Import and Export
+
+Support:
+
+- Postman Collection formats where feasible.
+- Postman Environment formats.
+- OpenAPI.
+- JSON.
+- YAML where applicable.
+- cURL import.
+- cURL export.
+- HTML documentation.
+- Markdown documentation.
+- Test reports.
+- Workspace backup.
+
+Create compatibility tests using representative sample files.
+
+Preserve unknown fields where safe and useful.
+
+Provide a detailed import report.
+
+Do not overwrite existing collections without confirmation.
+
+### 6.24 Application Settings
+
+Provide:
+
+- Light and dark themes.
+- Keyboard shortcuts.
+- Font settings.
+- Proxy configuration.
+- TLS settings.
+- Certificate management.
+- Storage management.
+- History retention.
+- Default timeouts.
+- Response size limits.
+- Editor preferences.
+- Export defaults.
+- Logging preferences.
+- Privacy controls.
+- Backup settings.
+- Update settings.
+
+---
+
+## 7. User Interface and Experience
+
+Create a professional desktop interface suitable for daily use by backend engineers.
+
+Do not simply generate a generic admin dashboard.
+
+The main layout should contain:
+
+### Left sidebar
+
+- Workspace selector.
+- Collections.
+- Nested folders.
+- Environments.
+- History.
+- APIs and specifications.
+- Mock servers.
+- Saved workflows.
+- Search.
+
+### Main workspace
+
+- Multiple request tabs.
+- Request name.
+- HTTP method selector.
+- URL field.
+- Send button.
+- Save button.
+- Request configuration tabs.
+- Response viewer.
+- Test results.
+- Execution status.
+- Loading and error states.
+
+### Request configuration tabs
+
+- Params.
+- Authorization.
+- Headers.
+- Body.
+- Scripts.
+- Tests.
+- Settings.
+- Documentation.
+
+### Response tabs
+
+- Body.
+- Headers.
+- Cookies.
+- Tests.
+- Console.
+- Timing.
+- Network details where supported.
+
+### Additional views
+
+- Collection Runner.
+- Environment editor.
+- Variable inspector.
+- OpenAPI editor.
+- Mock server manager.
+- WebSocket client.
+- GraphQL client.
+- gRPC client.
+- MQTT client.
+- Settings.
+- Import/export wizard.
+- Execution history.
+- Performance reports.
+
+### Design requirements
+
+- Dense, information-rich developer UI.
+- Clear typography.
+- Consistent spacing.
+- Resizable panels.
+- Keyboard-first workflows.
+- Search everywhere.
+- Context menus.
+- Drag-and-drop organization.
+- Responsive layouts within desktop window constraints.
+- Accessible controls.
+- Clear empty states.
+- Real loading indicators.
+- Useful error messages.
+- No fake data in production views.
+- No dead buttons.
+- No decorative controls that imply functionality but do nothing.
+
+Provide a cohesive design system and reusable components.
+
+Support English initially and structure the application for future localization, including Persian and right-to-left layouts.
+
+Use original branding.
+
+---
+
+## 8. Electron Security Requirements
+
+Follow current official Electron security recommendations.
+
+Mandatory configuration:
+
+- contextIsolation enabled.
+- nodeIntegration disabled in renderers.
+- Renderer sandboxing enabled wherever compatible.
+- Restrictive Content Security Policy.
+- No unrestricted remote content in privileged windows.
+- Strict IPC sender validation.
+- Input validation for all privileged operations.
+- Restricted navigation.
+- Restricted new-window creation.
+- Safe external URL handling.
+- No arbitrary shell command execution from renderer input.
+- No unrestricted filesystem API exposure.
+- No secrets in logs.
+- No secrets in ordinary application state.
+- Safe certificate handling.
+- Explicit permission management.
+- Secure updates.
+- Dependency vulnerability checks.
+
+Treat imported collections, scripts, URLs, OpenAPI specifications, response bodies, and environment files as potentially untrusted input.
+
+A malicious collection must not be able to execute operating-system commands merely by being imported.
+
+Do not weaken TLS validation by default.
+
+Provide an explicit, clearly warned option for advanced TLS debugging only if safely supported.
+
+Do not load external JavaScript from a remote CDN into privileged renderer windows.
+
+---
+
+## 9. Local-First and Offline Requirements
+
+The following must work without account registration:
+
+- HTTP request building and execution.
+- Local collections.
+- Local environments.
+- Local history.
+- Request scripting.
+- Automated tests.
+- Collection Runner.
+- Local mock servers.
+- OpenAPI import and export.
+- Documentation generation.
+- Workspace backups.
+- Local CLI execution.
+- Basic GraphQL, WebSocket, gRPC, and MQTT features where their required dependencies are installed and the target endpoint is reachable.
+
+Naturally, an API request still requires network connectivity to the target server unless the target is local.
+
+Features that require a remote provider, external DNS, remote API, or cloud collaboration must be clearly labeled.
+
+The application must never require a proprietary cloud service for ordinary local HTTP testing.
+
+---
+
+## 10. Persistence, Data Integrity, and Migration
+
+Implement a versioned local database.
+
+Requirements:
+
+- Schema migrations.
+- Transactional writes.
+- Crash recovery.
+- Database integrity checks.
+- Backup and restore.
+- Import conflict resolution.
+- Safe deletion.
+- Data retention controls.
+- Search indexing where beneficial.
+- Large collection performance.
+- Large history performance.
+- Recovery from interrupted imports.
+
+Define clear rules for handling:
+
+- Duplicate identifiers.
+- Conflicting environment names.
+- Missing referenced folders.
+- Invalid collection formats.
+- Unsupported protocol configurations.
+- Secret import behavior.
+- Corrupted backup files.
+
+Never silently overwrite user data.
+
+---
+
+## 11. Project Documentation
+
+Maintain these documents:
+
+- README.md.
+- ARCHITECTURE.md.
+- ROADMAP.md.
+- IMPLEMENTATION_STATUS.md.
+- FEATURE_MATRIX.md.
+- SECURITY.md.
+- TESTING.md.
+- CONTRIBUTING.md.
+- docs/adr/.
+- docs/protocols/.
+- docs/import-export/.
+- docs/compatibility/.
+
+The implementation status must identify:
+
+- Completed features.
+- Partially implemented features.
+- Unimplemented features.
+- Known bugs.
+- Security limitations.
+- Protocol limitations.
+- Test coverage.
+- Remaining work.
+
+Update documentation at the end of every approved phase.
+
+Do not mark a feature complete merely because a component exists in the UI.
+
+---
+
+## 12. Mandatory Phased Development Plan
+
+Do not implement every feature at once.
+
+First prepare the following plan.
+
+### Phase 0 — Discovery and Architecture
+
+Inspect the current repository.
+
+If it is empty, propose the initial project structure.
+
+If it contains code, inspect the existing implementation before changing anything.
+
+Produce:
+
+- Requirements analysis.
+- Feature inventory.
+- Architecture diagram.
+- Technology decisions.
+- Module boundaries.
+- Database schema proposal.
+- Security threat model.
+- Protocol capability matrix.
+- Import/export compatibility strategy.
+- Testing strategy.
+- Dependency and licensing review.
+- Detailed phased roadmap.
+- Risks and unresolved technical questions.
+
+Do not begin Phase 1 until I approve Phase 0.
+
+### Phase 1 — Electron Foundation
+
+Build:
+
+- Electron application.
+- React and TypeScript frontend.
+- Secure preload layer.
+- IPC framework.
+- Application shell.
+- Navigation.
+- Theme system.
+- SQLite integration.
+- Migrations.
+- Logging.
+- Error handling.
+- Initial automated tests.
+- Development and production builds.
+
+Acceptance criteria:
+
+- Application launches successfully.
+- Production build runs.
+- Database persists across restarts.
+- Security configuration is verified.
+- No placeholder buttons are presented as completed functionality.
+
+Wait for my approval before Phase 2.
+
+### Phase 2 — Core HTTP Client
+
+Build the complete basic HTTP workflow:
+
+- Request builder.
+- HTTP methods.
+- Headers.
+- Query parameters.
+- Body editors.
+- Authentication basics.
+- Real HTTP execution.
+- Request cancellation.
+- Timeouts.
+- Response inspection.
+- Error handling.
+- Request saving.
+- Basic history.
+
+Acceptance criteria:
+
+- Real requests reach real endpoints.
+- Successful and failed responses are displayed correctly.
+- Large responses are handled without freezing the UI.
+- Tests cover the core HTTP behavior.
+
+Wait for my approval before Phase 3.
+
+### Phase 3 — Collections, Variables, and Environments
+
+Build persistent collections, folders, variables, environment switching, request tabs, and import/export foundations.
+
+Acceptance criteria:
+
+- Data survives application restarts.
+- Variable precedence is deterministic.
+- Collection operations preserve request configuration.
+- Environment switching changes the actual outgoing request.
+
+Wait for approval.
+
+### Phase 4 — Authentication, Secrets, and Script Engine
+
+Build advanced authentication and the isolated script runtime.
+
+Acceptance criteria:
+
+- Authentication is applied correctly.
+- Scripts execute in the intended isolated environment.
+- Script timeouts and cancellation work.
+- Privileged filesystem and process access are unavailable to ordinary collection scripts.
+- Security tests cover malicious script attempts.
+
+Wait for approval.
+
+### Phase 5 — Automated Tests and Collection Runner
+
+Build test assertions, pre-request and post-response scripts, iteration data, request chaining, reports, and execution controls.
+
+Acceptance criteria:
+
+- Test failures are reported correctly.
+- Iterations use the intended data.
+- Execution can be cancelled.
+- Tests are deterministic where possible.
+- Failure reports can be exported.
+
+Wait for approval.
+
+### Phase 6 — OpenAPI, Documentation, and Mock Server
+
+Build specification import, validation, request generation, documentation, and local mocking.
+
+Acceptance criteria:
+
+- Unsupported constructs produce explicit warnings.
+- Imported data is preserved where possible.
+- Mock endpoints return actual HTTP responses.
+- Documentation matches saved collection data.
+
+Wait for approval.
+
+### Phase 7 — Additional Protocols
+
+Implement and test:
+
+- GraphQL.
+- WebSocket.
+- Socket.IO.
+- gRPC.
+- MQTT.
+- SOAP and SSE where applicable.
+- MCP where feasible.
+
+Each protocol must have a separate implementation plan and acceptance criteria.
+
+Do not treat this phase as complete until every advertised protocol has meaningful integration tests.
+
+Wait for approval before continuing to Phase 8.
+
+### Phase 8 — CLI, CI/CD, and Performance Testing
+
+Build headless collection execution, machine-readable reports, CI integration, and appropriately scoped performance-testing functionality.
+
+Acceptance criteria:
+
+- CI exits successfully or unsuccessfully according to actual test results.
+- Reports are machine-readable.
+- Secrets are handled safely.
+- Cancellation and resource limits work.
+
+Wait for approval.
+
+### Phase 9 — Advanced Features
+
+Evaluate and implement:
+
+- Traffic inspection.
+- AI assistance.
+- Visual workflows.
+- Git integration.
+- Version history.
+- Advanced collaboration foundations.
+- Code generation.
+- Native credential store integration.
+- Advanced protocol capabilities.
+
+Prioritize features based on feasibility, value, and security.
+
+Wait for approval.
+
+### Phase 10 — Production Hardening and Release
+
+Perform:
+
+- Full regression testing.
+- Security review.
+- Dependency audit.
+- Performance profiling.
+- Database migration tests.
+- Import/export compatibility tests.
+- Linux packaging.
+- Windows packaging.
+- macOS packaging.
+- Installer verification.
+- Upgrade and rollback testing.
+- Crash recovery tests.
+- Documentation review.
+
+Build installers only for operating systems that can be tested appropriately in the available environment.
+
+Acceptance criteria:
+
+- Reproducible builds where feasible.
+- No known critical security defects.
+- No advertised feature is falsely marked complete.
+- Release notes and known limitations are documented.
+
+Wait for approval before finalizing the release.
+
+---
+
+## 13. Rules for Every Phase
+
+At the beginning of each phase:
+
+1. Explain the objective.
+2. List the exact files and modules to create or modify.
+3. Explain architectural decisions.
+4. List dependencies.
+5. Define measurable acceptance criteria.
+6. Identify risks.
+7. State what will not be implemented in that phase.
+8. Wait for my approval.
+
+After approval:
+
+1. Implement the approved scope.
+2. Run the relevant tests.
+3. Fix discovered failures.
+4. Run type checks and linting.
+5. Build the application.
+6. Inspect the actual UI.
+7. Verify the behavior of the implemented features.
+8. Update documentation.
+9. Update the feature matrix.
+10. Report test results honestly.
+11. List unresolved issues.
+12. Request approval before the next phase.
+
+Do not skip tests merely because the implementation appears correct.
+
+Do not create enormous files to reduce the number of files.
+
+Do not leave unfinished code hidden behind successful-looking UI controls.
+
+Use explicit capability states:
+
+- Implemented and tested.
+- Implemented with limitations.
+- Not implemented.
+- Requires an external service.
+- Blocked by an unresolved technical issue.
+
+If a test fails, fix it before claiming the phase has passed.
+
+---
+
+## 14. Final Deliverables
+
+The final product must include:
+
+- Complete source code.
+- Electron desktop application.
+- Build and packaging configuration.
+- Dependency lockfile.
+- Database migrations.
+- Unit and integration tests.
+- End-to-end tests.
+- Protocol integration tests.
+- Import/export compatibility tests.
+- CLI.
+- Documentation.
+- Security notes.
+- Sample collections.
+- Sample environments without real secrets.
+- Backup and restore functionality.
+- Installer packages where the build environment permits.
+- A feature-by-feature compatibility report.
+- Known limitations.
+- A reproducible development setup.
+
+All source code must be present in the project repository.
+
+Do not claim that the application has been built or tested unless the corresponding commands were actually executed and their results verified.
+
+---
+
+## 15. Your First Task — Phase 0 Only
+
+Start now.
+
+Do not write the application code yet.
+
+First inspect the existing workspace and repository.
+
+Then produce a detailed Phase 0 architecture and implementation plan.
+
+Specifically:
+
+1. Determine whether the repository already contains an application.
+2. Recommend the exact initial technology choices.
+3. Explain the protocol engine design.
+4. Explain how secure script execution will work.
+5. Explain how HTTP networking will be implemented.
+6. Propose the SQLite data model.
+7. Explain Postman Collection and Environment compatibility.
+8. Identify which features can work fully offline.
+9. Identify features requiring external infrastructure.
+10. Identify technically difficult or incompatible requirements.
+11. Produce a phase-by-phase implementation roadmap.
+12. Define measurable acceptance criteria for Phase 1.
+13. Identify the highest-risk architectural decisions.
+14. Explain the estimated relative complexity of each phase without making unrealistic promises.
+15. List questions that genuinely require my decision.
+
+Finish with a concise Phase 0 approval checklist.
+
+**Stop after presenting Phase 0. Do not create Phase 1 files, install dependencies, or start implementation until I explicitly approve the plan.**
