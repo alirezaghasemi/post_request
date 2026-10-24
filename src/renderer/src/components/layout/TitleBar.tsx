@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Minus, Square, X, Sun, Moon, Terminal, ShieldCheck, Globe, Upload } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Minus, Square, X, Sun, Moon, Terminal, ShieldCheck, Globe, Upload, PanelLeft } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { ImportExportModal } from '../import-export/ImportExportModal';
 
@@ -11,10 +11,24 @@ export const TitleBar: React.FC = () => {
     environments,
     activeEnvironmentId,
     setActiveEnvironment,
-    openTab
+    openTab,
+    sidebarCollapsed,
+    toggleSidebarCollapsed
   } = useAppStore();
 
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Global Ctrl+B shortcut to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleSidebarCollapsed();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSidebarCollapsed]);
 
   const handleMinimize = () => window.electronAPI?.window.minimize();
   const handleMaximize = () => window.electronAPI?.window.maximize();
@@ -29,6 +43,17 @@ export const TitleBar: React.FC = () => {
       <header className="h-9 w-full bg-slate-900 border-b border-slate-800 flex items-center justify-between px-3 select-none app-drag-region z-50">
         {/* Brand & Status Indicator */}
         <div className="flex items-center gap-2 app-no-drag">
+          <button
+            onClick={toggleSidebarCollapsed}
+            title={sidebarCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
+            className={`p-1 rounded transition-colors ${
+              sidebarCollapsed
+                ? 'text-slate-400 hover:text-blue-400 hover:bg-slate-800'
+                : 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
+            }`}
+          >
+            <PanelLeft size={14} />
+          </button>
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-semibold">
             <Terminal size={14} className="text-blue-400" />
             <span>DevPilot</span>

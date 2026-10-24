@@ -56,6 +56,12 @@ interface AppState {
   tabs: TabItem[];
   activeTabId: string;
 
+  // Layout
+  sidebarWidth: number;
+  sidebarCollapsed: boolean;
+  setSidebarWidth: (width: number) => void;
+  toggleSidebarCollapsed: () => void;
+
   // Actions
   init: () => Promise<void>;
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
@@ -107,6 +113,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   ],
   activeTabId: 'tab-overview',
+
+  sidebarWidth: (typeof window !== 'undefined' && Number(localStorage.getItem('devpilot_sidebar_width'))) || 300,
+  sidebarCollapsed: typeof window !== 'undefined' && localStorage.getItem('devpilot_sidebar_collapsed') === 'true',
+
+  setSidebarWidth: (width: number) => {
+    const clamped = Math.min(Math.max(width, 220), 600);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('devpilot_sidebar_width', String(clamped));
+    }
+    set({ sidebarWidth: clamped });
+  },
+
+  toggleSidebarCollapsed: () => {
+    set((state) => {
+      const next = !state.sidebarCollapsed;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('devpilot_sidebar_collapsed', String(next));
+      }
+      return { sidebarCollapsed: next };
+    });
+  },
 
   init: async () => {
     set({ loading: true, error: null });
